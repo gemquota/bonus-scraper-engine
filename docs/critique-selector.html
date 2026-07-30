@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Critique Framework · Character Selector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Onest:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0b0f;--bg2:#101218;--bg3:#181b25;--surface:#1e2230;--border:#2a2f42;
+  --text:#e4e6ef;--text2:#9498ad;--text3:#5c6077;
+  --accent:#f0b35b;--accent2:#d4893a;--accent-glow:rgba(240,179,91,0.12);
+  --green:#5bcf8a;--red:#e5535b;--indigo:#6b7dff;--teal:#4ecdc4;--pink:#e86b9e;
+  --radius:12px;--radius-sm:8px;
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Onest',sans-serif;background:var(--bg);color:var(--text);
+  line-height:1.6;min-height:100vh;overflow-x:hidden;
+}
+::selection{background:var(--accent);color:var(--bg)}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* HERO */
+.hero{
+  position:relative;padding:60px 40px 40px;text-align:center;overflow:hidden;
+  background:linear-gradient(180deg,var(--bg2) 0%,var(--bg) 100%);
+}
+.hero::before{
+  content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;
+  background:radial-gradient(ellipse at 30% 80%,var(--accent-glow) 0%,transparent 50%),
+             radial-gradient(ellipse at 70% 20%,rgba(107,125,255,0.08) 0%,transparent 50%);
+  pointer-events:none;
+}
+.hero h1{
+  font-family:'DM Serif Display',serif;font-size:clamp(2rem,4vw,3.2rem);
+  font-weight:400;letter-spacing:-0.02em;line-height:1.15;position:relative;
+}
+.hero h1 span{color:var(--accent)}
+.hero p{color:var(--text2);font-size:0.95rem;max-width:600px;margin:14px auto 0;line-height:1.6}
+
+/* CONFIG BAR */
+.config-bar{
+  max-width:960px;margin:-8px auto 0;padding:0 24px;position:relative;z-index:10;
+}
+.config-toggle{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:8px 18px;background:var(--surface);border:1px solid var(--border);
+  border-radius:100px;font-size:0.8rem;color:var(--text2);cursor:pointer;
+  font-family:inherit;transition:all .2s;
+}
+.config-toggle:hover{border-color:var(--text3);color:var(--text)}
+.config-panel{
+  display:none;margin-top:12px;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px 24px;
+}
+.config-panel.open{display:block}
+.config-panel h3{font-family:'DM Serif Display',serif;font-size:0.95rem;font-weight:400;margin-bottom:12px;color:var(--text2)}
+.config-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;
+}
+.config-item{display:flex;flex-direction:column;gap:4px}
+.config-item label{font-size:0.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em}
+.config-item input{
+  background:var(--bg2);border:1px solid var(--border);border-radius:6px;
+  padding:8px 10px;color:var(--text);font-family:inherit;font-size:0.85rem;
+  width:100%;outline:none;transition:border-color .2s;
+}
+.config-item input:focus{border-color:var(--accent)}
+.config-item input[type=number]{-moz-appearance:textfield}
+.config-item input::-webkit-inner-spin-button{-webkit-appearance:none}
+.config-total{
+  margin-top:12px;padding:10px 14px;background:var(--bg2);border-radius:var(--radius-sm);
+  font-size:0.85rem;color:var(--text2);text-align:center;
+}
+.config-total strong{color:var(--accent)}
+.config-total .detail{color:var(--text3);font-size:0.75rem;margin-top:2px}
+
+/* FILTER BAR */
+.filter-bar{
+  max-width:960px;margin:16px auto 0;padding:0 24px;display:flex;flex-wrap:wrap;gap:6px;
+}
+.filter-tag{
+  padding:5px 14px;border-radius:100px;font-size:0.75rem;
+  background:var(--bg3);border:1px solid var(--border);color:var(--text3);
+  cursor:pointer;transition:all .2s;font-family:inherit;user-select:none;
+}
+.filter-tag:hover{border-color:var(--text3);color:var(--text2)}
+.filter-tag.active{background:rgba(240,179,91,0.12);border-color:var(--accent);color:var(--accent)}
+.filter-tag.clear-all{color:var(--text3);font-size:0.7rem}
+.filter-tag.clear-all:hover{color:var(--red);border-color:var(--red)}
+
+/* CONTAINER */
+.container{max-width:960px;margin:0 auto;padding:20px 24px 140px}
+.group{margin-bottom:28px}
+.group-header{
+  display:flex;align-items:center;gap:14px;
+  padding:16px 22px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);cursor:pointer;transition:all .2s;user-select:none;
+}
+.group-header:hover{border-color:var(--text3);background:var(--bg3)}
+.group-header .icon{
+  width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:0.9rem;flex-shrink:0;
+}
+.group-header .icon.s1{background:rgba(240,179,91,0.15);color:var(--accent)}
+.group-header .icon.s2{background:rgba(107,125,255,0.15);color:var(--indigo)}
+.group-header .icon.s3{background:rgba(78,205,196,0.15);color:var(--teal)}
+.group-header h2{font-family:'DM Serif Display',serif;font-size:1.05rem;font-weight:400;flex:1}
+.group-header .stat{font-size:0.72rem;color:var(--text3);background:var(--bg);padding:2px 10px;border-radius:100px}
+.group-header .arrow{transition:transform .3s;color:var(--text3);font-size:0.8rem}
+.group-header.open .arrow{transform:rotate(180deg)}
+.group-body{display:none;padding-top:14px}
+.group-body.open{display:block}
+
+/* DOMAINS */
+.domain{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  margin-bottom:14px;overflow:hidden;transition:border-color .2s;
+}
+.domain:hover{border-color:#353a52}
+.domain-header{
+  display:flex;align-items:center;gap:12px;padding:14px 18px;
+  cursor:pointer;user-select:none;transition:background .2s;
+}
+.domain-header:hover{background:rgba(255,255,255,0.015)}
+.domain-header .num{
+  font-size:0.65rem;font-weight:600;color:var(--text3);
+  background:var(--bg2);padding:2px 8px;border-radius:100px;flex-shrink:0;
+}
+.domain-header h3{font-size:0.9rem;font-weight:500;flex:1}
+.domain-header .tagline{
+  font-size:0.72rem;color:var(--text3);display:none;
+}
+@media(min-width:700px){.domain-header .tagline{display:block;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+.domain-header .char-count{font-size:0.7rem;color:var(--text2);background:var(--bg2);padding:2px 10px;border-radius:100px;flex-shrink:0}
+.domain-header .arrow{transition:transform .3s;color:var(--text3);font-size:0.7rem;flex-shrink:0}
+.domain.open .domain-header .arrow{transform:rotate(180deg)}
+.domain-body{display:none;border-top:1px solid var(--border);padding:4px 0}
+.domain.open .domain-body{display:block}
+.domain.hidden{display:none}
+
+/* CHARACTERS */
+.character{
+  display:flex;align-items:flex-start;gap:12px;padding:12px 18px;
+  cursor:pointer;transition:all .15s;border-left:3px solid transparent;user-select:none;
+}
+.character:hover{background:rgba(255,255,255,0.012)}
+.character.selected{background:rgba(240,179,91,0.06);border-left-color:var(--accent)}
+.character.faded{opacity:0.3;pointer-events:none}
+.character .checkbox{
+  width:18px;height:18px;border-radius:5px;border:2px solid var(--text3);
+  flex-shrink:0;margin-top:3px;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;font-size:0.55rem;color:transparent;
+}
+.character.selected .checkbox{border-color:var(--accent);background:var(--accent);color:var(--bg)}
+.character .info{flex:1;min-width:0}
+.character .name{font-weight:500;font-size:0.85rem;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.character .name .version{font-size:0.6rem;font-weight:400;color:var(--text3);background:var(--bg2);padding:1px 6px;border-radius:100px}
+.character .archetype{font-size:0.74rem;color:var(--text2);margin-top:1px}
+.character .focus{font-size:0.72rem;color:var(--text3);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.character .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.character .tag{
+  font-size:0.6rem;padding:1px 8px;border-radius:100px;background:var(--bg2);
+  border:1px solid var(--border);color:var(--text3);cursor:pointer;transition:all .15s;
+  pointer-events:auto;
+}
+.character .tag:hover{border-color:var(--accent);color:var(--accent)}
+.character .tag.active{background:rgba(240,179,91,0.12);border-color:var(--accent);color:var(--accent)}
+.character .findings-toggle{
+  font-size:0.68rem;color:var(--accent2);margin-top:4px;cursor:pointer;
+  display:inline-block;border-bottom:1px dotted transparent;transition:border-color .2s;
+}
+.character .findings-toggle:hover{border-color:var(--accent2)}
+.character .findings{font-size:0.72rem;color:var(--text2);margin-top:6px;line-height:1.6;display:none;background:var(--bg2);padding:8px 12px;border-radius:var(--radius-sm)}
+.character .findings.open{display:block}
+.character .findings .finding-item{padding:2px 0;display:flex;gap:6px;align-items:flex-start}
+.character .findings .finding-tags{display:flex;gap:3px;flex-wrap:wrap;margin-left:auto;flex-shrink:0}
+.character .findings .finding-tags .ftag{
+  font-size:0.55rem;padding:1px 5px;border-radius:3px;background:var(--bg3);color:var(--text3);
+}
+.sev{flex-shrink:0;font-weight:600;font-size:0.6rem;padding:1px 5px;border-radius:3px;height:fit-content;margin-top:2px}
+.sev-crit{background:rgba(229,83,91,0.25);color:var(--red)}
+.sev-high{background:rgba(229,83,91,0.15);color:var(--red)}
+.sev-med{background:rgba(240,179,91,0.12);color:var(--accent)}
+.sev-low{background:rgba(91,207,138,0.12);color:var(--green)}
+
+/* RELATED SECTION */
+.related-section{margin-top:6px;padding:8px 18px 8px 33px;display:none}
+.related-section.open{display:block}
+.related-section .label{font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px}
+.related-chips{display:flex;flex-wrap:wrap;gap:4px}
+.related-chip{
+  font-size:0.7rem;padding:2px 10px;border-radius:100px;
+  background:var(--bg3);border:1px solid var(--border);color:var(--text2);
+  cursor:pointer;transition:all .15s;
+}
+.related-chip:hover{border-color:var(--indigo);color:var(--indigo)}
+.related-chip.selected-chip{background:rgba(107,125,255,0.1);border-color:var(--indigo);color:var(--indigo)}
+
+/* BOTTOM BAR */
+.bottom-bar{
+  position:fixed;bottom:0;left:0;right:0;
+  background:linear-gradient(180deg,transparent,var(--bg) 25%);padding:28px 24px 20px;
+  pointer-events:none;z-index:100;
+}
+.bottom-bar-inner{
+  max-width:960px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;
+  gap:16px;padding:12px 20px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);backdrop-filter:blur(20px);pointer-events:auto;
+}
+.bottom-bar .picks{display:flex;align-items:center;gap:6px;flex:1;flex-wrap:wrap;min-height:28px}
+.bottom-bar .pick-slot{
+  display:flex;align-items:center;gap:4px;padding:3px 8px 3px 10px;
+  background:var(--surface);border-radius:100px;font-size:0.7rem;border:1px solid var(--border);
+}
+.bottom-bar .pick-slot .remove{cursor:pointer;opacity:0.4;font-size:0.65rem;transition:opacity .2s}
+.bottom-bar .pick-slot .remove:hover{opacity:1}
+.bottom-bar .empty-slots{color:var(--text3);font-size:0.75rem}
+.bottom-bar .actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.bottom-bar .btn-gen{
+  padding:9px 22px;background:var(--accent);color:var(--bg);border:none;
+  border-radius:100px;font-weight:600;font-size:0.8rem;cursor:pointer;
+  font-family:inherit;transition:all .2s;opacity:0.4;pointer-events:none;
+}
+.bottom-bar .btn-gen.active{opacity:1;pointer-events:auto}
+.bottom-bar .btn-gen.active:hover{transform:scale(1.02);box-shadow:0 4px 24px rgba(240,179,91,0.3)}
+.bottom-bar .btn-clear{
+  padding:7px 14px;background:transparent;color:var(--text3);
+  border:1px solid var(--border);border-radius:100px;font-size:0.75rem;
+  cursor:pointer;font-family:inherit;transition:all .2s;
+}
+.bottom-bar .btn-clear:hover{color:var(--text);border-color:var(--text3)}
+.bottom-bar .btn-preview{
+  padding:7px 14px;background:transparent;color:var(--indigo);
+  border:1px solid var(--border);border-radius:100px;font-size:0.75rem;
+  cursor:pointer;font-family:inherit;transition:all .2s;
+}
+.bottom-bar .btn-preview:hover{border-color:var(--indigo);background:rgba(107,125,255,0.06)}
+
+/* PREVIEW OVERLAY */
+.preview-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);
+  backdrop-filter:blur(8px);z-index:200;padding:40px 24px;overflow-y:auto;
+}
+.preview-overlay.open{display:flex;align-items:flex-start;justify-content:center}
+.preview-card{
+  max-width:800px;width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;animation:fadeUp .3s;
+}
+.preview-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 22px;border-bottom:1px solid var(--border);
+}
+.preview-header h2{font-family:'DM Serif Display',serif;font-size:1.1rem;font-weight:400}
+.preview-header .close{
+  background:none;border:none;color:var(--text3);font-size:1.2rem;
+  cursor:pointer;padding:4px;line-height:1;transition:color .2s;
+}
+.preview-header .close:hover{color:var(--text)}
+.preview-body{padding:16px 22px;max-height:60vh;overflow-y:auto}
+.preview-plan{margin-bottom:16px;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+.preview-plan-header{
+  padding:10px 14px;background:var(--bg2);font-size:0.82rem;font-weight:500;
+  cursor:pointer;display:flex;align-items:center;gap:8px;user-select:none;
+}
+.preview-plan-header:hover{background:var(--bg3)}
+.preview-plan-body{display:none;padding:8px 14px 12px}
+.preview-plan-body.open{display:block}
+.preview-phase{padding:3px 0;font-size:0.75rem;color:var(--text2)}
+.preview-phase .phase-num{color:var(--accent);font-weight:500}
+.preview-total{
+  margin-top:12px;padding:10px 14px;background:var(--bg2);border-radius:var(--radius-sm);
+  text-align:center;font-size:0.85rem;
+}
+.preview-total strong{color:var(--accent);font-size:1.1rem}
+
+/* ANIMATIONS */
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:none}
+}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+.group,.domain,.bottom-bar-inner,.preview-card{animation:fadeUp .4s backwards}
+.group:nth-child(1){animation-delay:.05s}
+.group:nth-child(2){animation-delay:.12s}
+.group:nth-child(3){animation-delay:.2s}
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  .hero{padding:40px 16px 30px}
+  .config-bar{padding:0 12px}
+  .filter-bar{padding:0 12px}
+  .container{padding:16px 12px 160px}
+  .domain-header{padding:10px 12px}
+  .character{padding:10px 12px}
+  .bottom-bar-inner{flex-direction:column;padding:10px 14px}
+  .bottom-bar .picks{width:100%}
+  .bottom-bar .actions{width:100%;justify-content:space-between}
+  .preview-overlay{padding:20px 12px}
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Critique Framework <span>·</span> Character Selector</h1>
+  <p>21 domains · 79 characters · 3 thematic groups.<br>Select any number of characters, configure plan parameters, and preview generated documents.</p>
+  <div style="margin-top:14px;display:inline-flex;align-items:center;gap:8px;padding:8px 20px;background:var(--surface);border:1px solid var(--border);border-radius:100px;font-size:0.85rem;color:var(--text2);position:relative;z-index:1">
+    <span>Selected</span>
+    <span style="font-weight:600;color:var(--text);min-width:20px;text-align:center" id="selectedCount">0</span>
+    <span style="color:var(--text3)">·</span>
+    <span style="color:var(--text3)">unlimited</span>
+  </div>
+</div>
+
+<div class="config-bar">
+  <button class="config-toggle" onclick="toggleConfig()">⚙ Configure Plan Parameters</button>
+  <div class="config-panel" id="configPanel">
+    <h3>Document Generation Parameters</h3>
+    <div class="config-grid">
+      <div class="config-item"><label>Plans</label><input type="number" id="pPlans" value="5" min="1" max="20" oninput="updateConfig()"></div>
+      <div class="config-item"><label>Phases per Plan</label><input type="number" id="pPhases" value="5" min="1" max="20" oninput="updateConfig()"></div>
+      <div class="config-item"><label>Stages per Phase</label><input type="number" id="pStages" value="5" min="1" max="20" oninput="updateConfig()"></div>
+      <div class="config-item"><label>Sections per Stage</label><input type="number" id="pSections" value="5" min="1" max="20" oninput="updateConfig()"></div>
+      <div class="config-item"><label>Tasks per Section</label><input type="number" id="pTasks" value="5" min="1" max="20" oninput="updateConfig()"></div>
+    </div>
+    <div class="config-total">
+      Per character: <strong id="perCharTotal">3,125</strong> tasks ·
+      Total: <strong id="grandTotal">0</strong> tasks ·
+      <span class="detail" id="configDetail">5 plans × 5 phases × 5 stages × 5 sections × 5 tasks</span>
+    </div>
+  </div>
+</div>
+
+<div class="filter-bar" id="filterBar"></div>
+
+<div class="container" id="app"></div>
+
+<div class="bottom-bar">
+  <div class="bottom-bar-inner">
+    <div class="picks" id="picksContainer"><span class="empty-slots">Select characters above</span></div>
+    <div class="actions">
+      <button class="btn-clear" onclick="clearAll()">Clear</button>
+      <button class="btn-preview" onclick="showPreview()">Preview</button>
+      <button class="btn-gen" id="genBtn" onclick="generate()">Generate Plans</button>
+    </div>
+  </div>
+</div>
+
+<div class="preview-overlay" id="previewOverlay" onclick="if(event.target===this)hidePreview()">
+  <div class="preview-card">
+    <div class="preview-header">
+      <h2>Document Preview</h2>
+      <button class="close" onclick="hidePreview()">✕</button>
+    </div>
+    <div class="preview-body" id="previewBody"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════════════
+const DATA = {
+  groups: [{
+    id:'introspective', title:'Recursive Introspective Investigative Studies',
+    icon:'◈', iconClass:'s1',
+    subtitle:'Domains that look inward — dissecting the codebase\'s own structure, security, performance, and technical integrity.',
+    domains:[{
+      num:'01', title:'Security & Trust', tagline:'Attack surface, credential mgmt, sandbox integrity, red teaming',
+      chars:[
+        {id:'s1', name:'Dr. Priya Sharma', archetype:'The Security Sentinel', version:'V1',
+         focus:'Credential mgmt, attack surface, sandbox integrity, audit trail', tags:['security','credentials','sandbox'],
+         findings:[
+           {sev:'HIGH', text:'Sync signal handler running async code — crash risk on Ctrl+C', tags:['concurrency','error-handling']},
+           {sev:'MED', text:'Triple credential resolution path — config bypasses to env', tags:['credentials','config']},
+           {sev:'MED', text:'Redundant credential loading — module-level side effect', tags:['credentials','code-quality']},
+           {sev:'MED', text:'Blocking approval prompt freezes event loop', tags:['concurrency','ux']},
+           {sev:'LOW', text:'String prefix sandboxing — TOCTOU race condition', tags:['security','concurrency']},
+           {sev:'LOW', text:'Telemetry logs contain full tool arguments', tags:['security','data']}]},
+        {id:'s2', name:'Dr. Anika Sharma', archetype:'The Supply Chain Defender', version:'V2',
+         focus:'Attack surface, secrets mgmt, supply chain vulns', tags:['security','supply-chain'],
+         findings:[
+           {sev:'HIGH', text:'.env file has no guard against accidental git commit', tags:['security','config']},
+           {sev:'MED', text:'No input validation on tool string arguments', tags:['security','code-quality']},
+           {sev:'MED', text:'url_fetch has no SSRF/network-boundary protection', tags:['security','network']},
+           {sev:'LOW', text:'No dependency vulnerability scanning', tags:['security','supply-chain']}]},
+        {id:'s3', name:'Dr. Anika Sharma', archetype:'The Trust Boundary Analyst', version:'V4',
+         focus:'Prompt template trust, plugin privilege escalation, auditability', tags:['security','trust'],
+         findings:[
+           {sev:'HIGH', text:'Plugin privilege escalation — plugins run at full permission level', tags:['security','architecture']},
+           {sev:'HIGH', text:'Auditability gap — multi-step operations not logged atomically', tags:['data','security']},
+           {sev:'MED', text:'Prompt template trust — user-controlled templates can inject', tags:['security','ai-quality']}]},
+        {id:'s4', name:'Detective Ava Chen', archetype:'The Forensic Investigator', version:'V6',
+         focus:'Incident forensics, log chain integrity, tamper detection', tags:['security','forensics','data'],
+         findings:[
+           {sev:'HIGH', text:'No Merkle-chain log integrity — logs can be silently modified', tags:['security','data']},
+           {sev:'MED', text:'Missing tamper-evident audit trail for sensitive operations', tags:['security','data']},
+           {sev:'MED', text:'Post-breach analysis framework absent', tags:['security','testing']},
+           {sev:'LOW', text:'Log retention policy not defined', tags:['data','governance']}]},
+        {id:'s5', name:'Agent Nova', archetype:'The AI Red Teamer', version:'V8',
+         focus:'Adversarial testing, red team ops, vulnerability discovery', tags:['security','red-team','ai-quality'],
+         findings:[
+           {sev:'CRIT', text:'Prompt injection surface — no input sanitization on user prompts', tags:['security','ai-quality']},
+           {sev:'HIGH', text:'Tool abuse escalation paths — one tool can call another', tags:['security','architecture']},
+           {sev:'HIGH', text:'SSRF via URL tools — internal network accessible', tags:['security','network']},
+           {sev:'HIGH', text:'Supply chain attack via plugin loading — unsigned plugins', tags:['security','supply-chain']},
+           {sev:'MED', text:'Credential exfiltration via error messages', tags:['security','credentials']},
+           {sev:'MED', text:'Rate limiting bypass — no per-user token bucket', tags:['security','performance']}]}]},{
+      num:'02', title:'Architecture & Modularity', tagline:'Module boundaries, dependency graphs, coupling, cohesion',
+      chars:[
+        {id:'a1', name:'Marcus Chen', archetype:'The Architecture Judge', version:'V1',
+         focus:'Modularity, dependency mgmt, abstraction boundaries, scalability', tags:['architecture','code-quality'],
+         findings:[
+           {sev:'HIGH', text:'God module (644 lines, 12 functions) — single file does too much', tags:['architecture','code-quality']},
+           {sev:'HIGH', text:'Dependency injection by convention, not contract', tags:['architecture','code-quality']},
+           {sev:'HIGH', text:'TUI is sprinkled through business logic — no separation of concerns', tags:['architecture','ux']},
+           {sev:'MED', text:'Two-and-a-half DAG algorithms — competing graph implementations', tags:['architecture','code-quality']},
+           {sev:'MED', text:'Three path configurations for the same database', tags:['architecture','config']}]},
+        {id:'a2', name:'Dr. Victor Stein', archetype:'The Architecture Academic', version:'V8',
+         focus:'Architectural patterns, coupling metrics, cohesion analysis', tags:['architecture','metrics'],
+         findings:[
+           {sev:'HIGH', text:'Package coupling exceeds threshold — modules import each other', tags:['architecture','code-quality']},
+           {sev:'HIGH', text:'Layer violation: scraper→server→scraper cycle in module graph', tags:['architecture']},
+           {sev:'HIGH', text:'No architecture fitness functions validated in CI', tags:['architecture','testing','devops']},
+           {sev:'MED', text:'No explicit module boundary contract or public API surface', tags:['architecture','documentation']},
+           {sev:'MED', text:'Cyclic dependency between terminal and server modules', tags:['architecture']}]},
+        {id:'a3', name:'Ravi Menon', archetype:'The Tech Debt Governor', version:'V3',
+         focus:'Tech debt governance, code review cadence, ADRs, scaling patterns', tags:['architecture','governance'],
+         findings:[
+           {sev:'HIGH', text:'No ADR process — architectural decisions undocumented', tags:['architecture','governance','documentation']},
+           {sev:'HIGH', text:'Module responsibility overlap — unclear module ownership', tags:['architecture','code-quality']},
+           {sev:'MED', text:'Inconsistent error handling patterns across modules', tags:['code-quality','error-handling']},
+           {sev:'MED', text:'No architecture review board or design review process', tags:['governance','architecture']},
+           {sev:'LOW', text:'Dead code from refactoring remains in codebase', tags:['code-quality']}]},
+        {id:'a4', name:'Dr. Kira Ivanova', archetype:'The Evolutionary Architect', version:'V5',
+         focus:'Dependency injection patterns, build system modularity, fitness functions', tags:['architecture','testing'],
+         findings:[
+           {sev:'HIGH', text:'No explicit module contract validation in CI pipeline', tags:['architecture','devops','testing']},
+           {sev:'HIGH', text:'No architecture fitness function suite for regression detection', tags:['architecture','testing']},
+           {sev:'MED', text:'Dependency graph allows circular imports between layers', tags:['architecture']},
+           {sev:'MED', text:'Build system lacks incremental module compilation', tags:['devops','performance']}]}]},{
+      num:'03', title:'Developer Experience', tagline:'Onboarding, tooling, debugging, contributor friction',
+      chars:[
+        {id:'dx1', name:'Jamie Vega', archetype:'The Contributor Advocate', version:'V1',
+         focus:'Onboarding, code quality, test coverage, docs effectiveness', tags:['onboarding','testing','documentation'],
+         findings:[
+           {sev:'HIGH', text:'No development quick-start guide — 2-3 hour ramp-up', tags:['onboarding','documentation']},
+           {sev:'HIGH', text:'Test coverage blind spots — 3 untested modules', tags:['testing','code-quality']},
+           {sev:'MED', text:'Inline attempted imports mask true dependency graph', tags:['code-quality','architecture']},
+           {sev:'MED', text:'Documentation is accurate but shallow on how-to', tags:['documentation']},
+           {sev:'LOW', text:'Test fixtures create workspace coupling', tags:['testing','architecture']}]},
+        {id:'dx2', name:'Tomas Rivera', archetype:'The Tooling Craftsman', version:'V5',
+         focus:'Workflow optimization, edit-compile-debug cycle, tool integration', tags:['onboarding','devops'],
+         findings:[
+           {sev:'HIGH', text:'No hot-reload mode — must restart after every change', tags:['devops','ux']},
+           {sev:'MED', text:'Config changes require full restart — no live reload', tags:['config','ux']},
+           {sev:'MED', text:'No pre-commit hooks for code quality gates', tags:['devops','code-quality']},
+           {sev:'LOW', text:'Test runner has no watch mode for continuous testing', tags:['testing','devops']}]},
+        {id:'dx3', name:'Olga Kowalski', archetype:'The Documentation Sentinel', version:'V3',
+         focus:'API docs, diagram accuracy, onboarding walkthrough, terminology', tags:['documentation','onboarding'],
+         findings:[
+           {sev:'HIGH', text:'Architecture diagram does not match reality', tags:['documentation','architecture']},
+           {sev:'HIGH', text:'No API reference documentation exists', tags:['documentation']},
+           {sev:'MED', text:'Onboarding walkthrough has dead ends', tags:['onboarding','documentation']},
+           {sev:'MED', text:'Terminology inconsistent across documentation', tags:['documentation']},
+           {sev:'LOW', text:'Code examples missing from docstrings', tags:['documentation']}]},
+        {id:'dx4', name:'Priya Nair', archetype:'The DX Researcher', version:'V8',
+         focus:'Developer workflow instrumentation, friction point measurement', tags:['onboarding','metrics'],
+         findings:[
+           {sev:'HIGH', text:'No telemetry on command completion time', tags:['metrics','performance']},
+           {sev:'HIGH', text:'Error frequency per module not tracked', tags:['metrics','reliability']},
+           {sev:'MED', text:'Friction point detection absent — no UX analytics', tags:['ux','metrics']},
+           {sev:'MED', text:'No A/B test infrastructure for command UX', tags:['ux','testing']}]}]},{
+      num:'04', title:'Reliability & Operations', tagline:'Error recovery, graceful degradation, incident response',
+      chars:[
+        {id:'r1', name:'Dr. Elena Vasquez', archetype:'The Reliability Sentinel', version:'V2',
+         focus:'Error recovery, observability, graceful degradation', tags:['reliability','error-handling'],
+         findings:[
+           {sev:'HIGH', text:'Tool executor lacks per-invocation timeouts', tags:['reliability','concurrency']},
+           {sev:'MED', text:'SQLite databases lack WAL mode — SQLITE_BUSY under load', tags:['data','performance','reliability']},
+           {sev:'MED', text:'No startup health check or credential validation ping', tags:['reliability','credentials']},
+           {sev:'MED', text:'Session state can be lost on crash — no fsync', tags:['reliability','data']}]},
+        {id:'r2', name:'Sarah Chen', archetype:'The Reliability Manager', version:'V8',
+         focus:'Reliability metrics, incident review quality, reliability culture', tags:['reliability','metrics'],
+         findings:[
+           {sev:'HIGH', text:'No SLI/SLO definitions for any service', tags:['reliability','metrics']},
+           {sev:'HIGH', text:'No incident post-mortem process', tags:['reliability','governance']},
+           {sev:'HIGH', text:'No chaos engineering practice', tags:['reliability','testing']},
+           {sev:'MED', text:'Error budgets not tracked or reported', tags:['reliability','metrics']}]},
+        {id:'r3', name:'Capt. James Mitchell', archetype:'The Failure Analyst', version:'V3',
+         focus:'Catastrophic failure modes, compliance traceability, certification', tags:['reliability','compliance'],
+         findings:[
+           {sev:'CRIT', text:'Single point of failure at the REPL loop', tags:['reliability','architecture']},
+           {sev:'HIGH', text:'Shell execution has no resource limits', tags:['reliability','security']},
+           {sev:'HIGH', text:'No circuit breaker for failing API calls', tags:['reliability','network']},
+           {sev:'MED', text:'No graceful degradation for missing dependencies', tags:['reliability','error-handling']}]},
+        {id:'r4', name:'Commander Sam Rivers', archetype:'The Incident Commander', version:'V5',
+         focus:'Incident response readiness, runbook quality, blast radius', tags:['reliability','devops'],
+         findings:[
+           {sev:'HIGH', text:'No incident response runbook documented', tags:['reliability','documentation']},
+           {sev:'HIGH', text:'Chaos engineering maturity at zero', tags:['reliability','testing']},
+           {sev:'MED', text:'Blast radius not contained per-module', tags:['architecture','reliability']},
+           {sev:'MED', text:'No post-mortem template for incidents', tags:['reliability','documentation']}]}]},{
+      num:'05', title:'Performance & Efficiency', tagline:'Async patterns, memory, hot-paths, scalability ceilings',
+      chars:[
+        {id:'p1', name:'Kenji Nakamura', archetype:'The Performance Tuner', version:'V2',
+         focus:'Async patterns, memory efficiency, hot-paths', tags:['performance','concurrency'],
+         findings:[
+           {sev:'HIGH', text:'TokenCounter recomputes on every call — keystroke-time cost', tags:['performance']},
+           {sev:'MED', text:'read_file_surgical reads entire file before truncating', tags:['performance']},
+           {sev:'MED', text:'No backpressure on concurrent tool execution', tags:['performance','concurrency']},
+           {sev:'LOW', text:'os.path.relpath called in hot loop', tags:['performance']}]},
+        {id:'p2', name:'Dr. Hiroshi Yamamoto', archetype:'The HPC Architect', version:'V8',
+         focus:'Parallel computing patterns, memory hierarchy optimization', tags:['performance','concurrency'],
+         findings:[
+           {sev:'HIGH', text:'No parallel URL fetching — sequential bottleneck', tags:['performance','concurrency']},
+           {sev:'HIGH', text:'Synchronous DB writes block event loop', tags:['performance','data','concurrency']},
+           {sev:'HIGH', text:'Memory grows unbounded during long scraping runs', tags:['performance','data']},
+           {sev:'HIGH', text:'SQLite contention under concurrent workers', tags:['performance','data','concurrency']},
+           {sev:'MED', text:'Thread pool size hardcoded — not configurable', tags:['performance','config']}]},
+        {id:'p3', name:'Lin Wei', archetype:'The Profiler', version:'V5',
+         focus:'I/O profiling, syscall overhead, flame graph analysis', tags:['performance','metrics'],
+         findings:[
+           {sev:'HIGH', text:'No flame graph capability — profile data not accessible', tags:['performance','metrics']},
+           {sev:'MED', text:'Syscall count excessive per HTTP request', tags:['performance','network']},
+           {sev:'MED', text:'Page faults from lazy module loading', tags:['performance']},
+           {sev:'LOW', text:'GC pressure from string allocations in hot loop', tags:['performance']}]},
+        {id:'p4', name:'Dr. Aisha Bakari', archetype:'The Scalability Theorist', version:'V5',
+         focus:'Amdahl\'s law bottlenecks, concurrency models, backpressure', tags:['performance','architecture'],
+         findings:[
+           {sev:'HIGH', text:'Sequential bottleneck in URL processing pipeline', tags:['performance','concurrency']},
+           {sev:'HIGH', text:'No backpressure mechanism for overload scenarios', tags:['performance','reliability']},
+           {sev:'MED', text:'Thread limit far below theoretical max', tags:['performance','config']},
+           {sev:'MED', text:'Resource contention under concurrent load', tags:['performance','concurrency']}]}]},{
+      num:'06', title:'Code Generation', tagline:'Output correctness, diff accuracy, syntax validation, tool protocol',
+      chars:[
+        {id:'cg1', name:'Yuki Tanaka', archetype:'The Code Quality Engineer', version:'V3',
+         focus:'Code gen quality, tool protocol, serialization, AST analysis', tags:['code-quality','ai-quality'],
+         findings:[
+           {sev:'HIGH', text:'Fuzzy SEARCH/REPLACE lacks context anchoring', tags:['code-quality','ai-quality']},
+           {sev:'HIGH', text:'No syntax validation after file write', tags:['code-quality','testing']},
+           {sev:'MED', text:'No output diff shown before apply', tags:['ux','code-quality']},
+           {sev:'MED', text:'Truncation strategy can lose content', tags:['data','code-quality']}]},
+        {id:'cg2', name:'David Park', archetype:'The Compiler Engineer', version:'V8',
+         focus:'AST-level code transformation, code generation correctness', tags:['code-quality','ai-quality'],
+         findings:[
+           {sev:'CRIT', text:'SEARCH/REPLACE can corrupt file on partial match', tags:['code-quality','reliability']},
+           {sev:'HIGH', text:'No AST-level validation before apply', tags:['code-quality','testing']},
+           {sev:'HIGH', text:'Language-specific generation rules missing', tags:['code-quality','ai-quality']},
+           {sev:'MED', text:'Template rendering has no escape handling', tags:['code-quality','security']}]},
+        {id:'cg3', name:'Dr. Felix Weber', archetype:'The Semantics Preservationist', version:'V5',
+         focus:'Code semantics preservation, refactoring safety, equivalence checking', tags:['code-quality','testing'],
+         findings:[
+           {sev:'HIGH', text:'No functional equivalence check after code modification', tags:['testing','code-quality']},
+           {sev:'HIGH', text:'No rollback on validation failure', tags:['reliability','code-quality']},
+           {sev:'MED', text:'Refactoring tools can silently change semantics', tags:['code-quality']},
+           {sev:'MED', text:'No before/after diff stored for audit', tags:['data','code-quality']}]},
+        {id:'cg4', name:'Ingrid Larsen', archetype:'The IDE Integrationist', version:'V5',
+         focus:'IDE protocol integration, LSP, inline diagnostics', tags:['code-quality','devops'],
+         findings:[
+           {sev:'HIGH', text:'No LSP integration for inline diagnostics', tags:['devops','ux']},
+           {sev:'HIGH', text:'No side-by-side diff rendering', tags:['ux']},
+           {sev:'MED', text:'File tree not synced with workspace state', tags:['ux']},
+           {sev:'LOW', text:'No editor command bindings', tags:['ux','config']}]}]},{
+      num:'07', title:'Memory & Storage', tagline:'SQLite design, caching, backup/restore, data durability',
+      chars:[
+        {id:'m1', name:'Carlos Rivera', archetype:'The Database Architect', version:'V3',
+         focus:'Memory tiering, SQLite schema, compaction, WAL, backup', tags:['data','performance'],
+         findings:[
+           {sev:'HIGH', text:'No WAL checkpoint management', tags:['data','performance']},
+           {sev:'HIGH', text:'No backup strategy for persistent data', tags:['data','reliability']},
+           {sev:'MED', text:'Schema lacks indexes on foreign keys', tags:['data','performance']},
+           {sev:'MED', text:'Cache invalidation too conservative', tags:['data','performance']}]},
+        {id:'m2', name:'Dr. Olga Petrovna', archetype:'The Database Expert', version:'V8',
+         focus:'Query optimization, index strategy, data integrity, migration', tags:['data','performance'],
+         findings:[
+           {sev:'HIGH', text:'Full-table scans on common query paths', tags:['data','performance']},
+           {sev:'HIGH', text:'check_same_thread=False masks concurrency bugs', tags:['data','concurrency','testing']},
+           {sev:'HIGH', text:'No migration framework for schema changes', tags:['data','devops']},
+           {sev:'MED', text:'No data integrity verification mechanism', tags:['data','testing']}]},
+        {id:'m3', name:'Dr. Helena Bergström', archetype:'The Data Durability Guardian', version:'V5',
+         focus:'Durable writes, crash-safe persistence, fsync guarantees', tags:['data','reliability'],
+         findings:[
+           {sev:'HIGH', text:'No fsync on critical writes — data loss risk', tags:['data','reliability']},
+           {sev:'HIGH', text:'Crash recovery path untested', tags:['data','reliability','testing']},
+           {sev:'MED', text:'WAL mode not enabled for better durability', tags:['data','performance']},
+           {sev:'MED', text:'No periodic integrity check', tags:['data','testing']}]},
+        {id:'m4', name:'Daniel Park', archetype:'The Cache Strategist', version:'V5',
+         focus:'Cache hierarchy, TTL management, invalidation strategies', tags:['data','performance'],
+         findings:[
+           {sev:'HIGH', text:'No multi-level cache for repeated queries', tags:['data','performance']},
+           {sev:'MED', text:'Cache invalidation is all-or-nothing', tags:['data','performance']},
+           {sev:'MED', text:'No cache hit-rate telemetry', tags:['data','metrics']},
+           {sev:'LOW', text:'TTL not configurable per data type', tags:['data','config']}]}]},{
+      num:'08', title:'Infrastructure & DevOps', tagline:'CI/CD, Docker, IaC, monitoring, DORA metrics',
+      chars:[
+        {id:'inf1', name:'Captain Raj Kumar', archetype:'The Platform Engineer', version:'V6',
+         focus:'Containerization, environment parity, deployment reproducibility', tags:['devops','reliability'],
+         findings:[
+           {sev:'HIGH', text:'No Dockerfile for reproducible deployment', tags:['devops']},
+           {sev:'HIGH', text:'Infrastructure not codified as code', tags:['devops']},
+           {sev:'HIGH', text:'Environment parity between dev/prod not enforced', tags:['devops','reliability']},
+           {sev:'MED', text:'No deployment automation pipeline', tags:['devops']}]},
+        {id:'inf2', name:'Yuki Tanaka', archetype:'The SRE', version:'V6',
+         focus:'SLI/SLO definition, error budgets, monitoring coverage, on-call', tags:['devops','reliability','metrics'],
+         findings:[
+           {sev:'HIGH', text:'No SLI/SLO definitions for any component', tags:['reliability','metrics']},
+           {sev:'HIGH', text:'Error budgets not tracked or reported', tags:['reliability','metrics']},
+           {sev:'MED', text:'No monitoring dashboard for operations', tags:['devops','metrics']},
+           {sev:'MED', text:'On-call runbook absent', tags:['devops','documentation']}]},
+        {id:'inf3', name:'Ahmed Osman', archetype:'The Cloud Architect', version:'V6',
+         focus:'Multi-cloud strategy, cost optimization, auto-scaling, DR', tags:['devops','cost'],
+         findings:[
+           {sev:'HIGH', text:'Disaster recovery not addressed — no backup plan', tags:['reliability','data']},
+           {sev:'MED', text:'No scaling design for multi-user scenarios', tags:['architecture','performance']},
+           {sev:'LOW', text:'No multi-cloud strategy (reasonable for current scope)', tags:['cost']}]},
+        {id:'inf4', name:'Dr. Nina Petrova', archetype:'The DevOps Researcher', version:'V6',
+         focus:'DORA metrics, deployment frequency, change failure rate, MTTR', tags:['devops','metrics'],
+         findings:[
+           {sev:'HIGH', text:'No deployment frequency tracking', tags:['devops','metrics']},
+           {sev:'HIGH', text:'Change failure rate unknown', tags:['devops','metrics']},
+           {sev:'MED', text:'MTTR not measured', tags:['devops','metrics']},
+           {sev:'MED', text:'Lead time for changes not tracked', tags:['devops','metrics']}]},
+        {id:'inf5', name:'Maria Santos', archetype:'The DevOps Platform Engineer', version:'V8',
+         focus:'CI pipeline hardening, artifact management, environment promotion', tags:['devops','testing'],
+         findings:[
+           {sev:'HIGH', text:'CI lacks matrix testing across Python versions', tags:['devops','testing']},
+           {sev:'HIGH', text:'No artifact versioning for releases', tags:['devops']},
+           {sev:'HIGH', text:'CI secrets not centrally managed', tags:['devops','security']},
+           {sev:'MED', text:'Test parallelization not configured', tags:['devops','testing','performance']}]}]}]},{
+    id:'expansions', title:'Domain Expansions', icon:'◎', iconClass:'s2',
+    subtitle:'Domains that expand outward — reaching users, ensuring quality, building community.',
+    domains:[{
+      num:'09', title:'Testing & QA', tagline:'Test architecture, coverage, property-based testing, CI pipeline',
+      chars:[
+        {id:'t1', name:'Dr. Leo Chang', archetype:'The Test Architect', version:'V6',
+         focus:'Test architecture, test isolation, deterministic testing', tags:['testing','architecture'],
+         findings:[
+           {sev:'HIGH', text:'No test architecture documentation', tags:['testing','documentation']},
+           {sev:'HIGH', text:'Tests share state via global database', tags:['testing']},
+           {sev:'MED', text:'No deterministic test ordering', tags:['testing']},
+           {sev:'MED', text:'Flaky tests not quarantined', tags:['testing']}]},
+        {id:'t2', name:'Maria Tsvetkova', archetype:'The Quality Advocate', version:'V6',
+         focus:'Coverage philosophy, boundary value analysis, edge cases', tags:['testing','code-quality'],
+         findings:[
+           {sev:'HIGH', text:'No mutation testing — line coverage only', tags:['testing','code-quality']},
+           {sev:'MED', text:'Boundary value analysis absent', tags:['testing']},
+           {sev:'MED', text:'Edge cases not systematically discovered', tags:['testing']}]},
+        {id:'t3', name:'Samir Patel', archetype:'The Pipeline Guardian', version:'V6',
+         focus:'CI pipeline reliability, test speed optimization, conditional execution', tags:['testing','devops'],
+         findings:[
+           {sev:'HIGH', text:'No conditional test execution', tags:['testing','devops']},
+           {sev:'MED', text:'Test runtime not tracked', tags:['testing','metrics']},
+           {sev:'MED', text:'Flaky test quarantine absent', tags:['testing']},
+           {sev:'LOW', text:'Test reporting lacks trend data', tags:['testing','metrics']}]},
+        {id:'t4', name:'Dr. Hannah Wagner', archetype:'The Formal Methods Advocate', version:'V6',
+         focus:'Property-based testing, state space exploration, invariant discovery', tags:['testing','code-quality'],
+         findings:[
+           {sev:'HIGH', text:'No property-based tests for any module', tags:['testing']},
+           {sev:'HIGH', text:'State space not explored', tags:['testing']},
+           {sev:'MED', text:'No contract testing for API boundaries', tags:['testing','architecture']},
+           {sev:'MED', text:'Invariants not documented or tested', tags:['testing','documentation']}]},
+        {id:'t5', name:'Dr. Robert Chen', archetype:'The Testing Researcher', version:'V8',
+         focus:'Statistical testing methods, reliability modeling, test effectiveness', tags:['testing','metrics','reliability'],
+         findings:[
+           {sev:'HIGH', text:'No statistical flakiness detection', tags:['testing']},
+           {sev:'HIGH', text:'Test effectiveness not measured', tags:['testing','metrics']},
+           {sev:'HIGH', text:'No fault injection framework', tags:['testing','reliability']},
+           {sev:'HIGH', text:'No performance regression tests', tags:['testing','performance']}]}]},{
+      num:'10', title:'User Experience & Design', tagline:'Terminal UX, visual design, interaction flow, accessibility',
+      chars:[
+        {id:'u1', name:'Amara Osei', archetype:'The Experience Guardian', version:'V2',
+         focus:'Terminal UX, feedback loops, error communication, onboarding', tags:['ux','onboarding'],
+         findings:[
+           {sev:'HIGH', text:'Error messages inconsistent — raw tracebacks visible', tags:['ux','error-handling']},
+           {sev:'HIGH', text:'No progress indication during long operations', tags:['ux']},
+           {sev:'MED', text:'/help command advertised but not implemented', tags:['ux']},
+           {sev:'MED', text:'No confirmation before destructive actions', tags:['ux','reliability']}]},
+        {id:'u2', name:'Dr. Fatima Al-Rashid', archetype:'The HCI Ethos', version:'V3',
+         focus:'Human-agent trust calibration, mental models, communication', tags:['ux','ai-quality'],
+         findings:[
+           {sev:'HIGH', text:'No interrupt mechanism for mid-execution tasks', tags:['ux','concurrency']},
+           {sev:'MED', text:'Feedback is tool-centric not goal-centric', tags:['ux']},
+           {sev:'MED', text:'Error messages assume technical proficiency', tags:['ux','onboarding']}]},
+        {id:'u3', name:'Leo Park', archetype:'The Visual Designer', version:'V4',
+         focus:'Visual hierarchy, information density, spacing, loading states', tags:['ux','accessibility'],
+         findings:[
+           {sev:'HIGH', text:'No visual hierarchy for status', tags:['ux']},
+           {sev:'MED', text:'Information density uncontrolled', tags:['ux','accessibility']},
+           {sev:'MED', text:'Inconsistent spacing and alignment', tags:['ux']},
+           {sev:'LOW', text:'No dark mode / theme system', tags:['ux']}]},
+        {id:'u4', name:'Aria Thompson', archetype:'The UX Researcher', version:'V8',
+         focus:'Longitudinal UX studies, user journey mapping, emotional response', tags:['ux','metrics'],
+         findings:[
+           {sev:'HIGH', text:'No user research conducted', tags:['ux']},
+           {sev:'HIGH', text:'Task success rate not tracked', tags:['ux','metrics']},
+           {sev:'HIGH', text:'Accessibility audit not performed', tags:['accessibility','ux']},
+           {sev:'MED', text:'Emotional response to errors not captured', tags:['ux','metrics']}]}]},{
+      num:'11', title:'Documentation & Knowledge', tagline:'Info architecture, API docs, tutorials, knowledge base',
+      chars:[
+        {id:'doc1', name:'Iris Fontaine', archetype:'The Documentation Architect', version:'V6',
+         focus:'Information architecture, doc lifecycle, API reference quality', tags:['documentation','architecture'],
+         findings:[
+           {sev:'HIGH', text:'No information architecture plan', tags:['documentation']},
+           {sev:'HIGH', text:'API reference incomplete', tags:['documentation']},
+           {sev:'MED', text:'No versioned documentation system', tags:['documentation','devops']},
+           {sev:'MED', text:'Documentation lifecycle not defined', tags:['documentation']}]},
+        {id:'doc2', name:'Dr. Marcus Webb', archetype:'The Knowledge Manager', version:'V6',
+         focus:'Knowledge base design, information discoverability, dedup', tags:['documentation','onboarding'],
+         findings:[
+           {sev:'HIGH', text:'No centralized knowledge base', tags:['documentation']},
+           {sev:'MED', text:'Information buried across multiple files', tags:['documentation']},
+           {sev:'MED', text:'Duplicate architectural descriptions', tags:['documentation','architecture']},
+           {sev:'LOW', text:'No search across documentation', tags:['documentation']}]},
+        {id:'doc3', name:'Sofia Reyes', archetype:'The Docs Advocate', version:'V6',
+         focus:'Getting-started, example quality, troubleshooting guides', tags:['documentation','onboarding'],
+         findings:[
+           {sev:'HIGH', text:'Getting-started tutorial absent', tags:['documentation','onboarding']},
+           {sev:'HIGH', text:'No troubleshooting guide exists', tags:['documentation']},
+           {sev:'MED', text:'Examples lack realistic scenarios', tags:['documentation']},
+           {sev:'MED', text:'Doc-as-code workflow not automated', tags:['documentation','devops']}]},
+        {id:'doc4', name:'Alex Kim', archetype:'The Docs Engineer', version:'V8',
+         focus:'Doc generation tooling, API doc extraction, doc-test integration', tags:['documentation','devops','testing'],
+         findings:[
+           {sev:'HIGH', text:'No automated doc generation from code', tags:['documentation','devops']},
+           {sev:'HIGH', text:'Documentation not tested in CI', tags:['documentation','testing','devops']},
+           {sev:'HIGH', text:'API reference not extracted from code', tags:['documentation']},
+           {sev:'MED', text:'No doc-test framework for examples', tags:['documentation','testing']}]}]},{
+      num:'12', title:'Community & Open Source', tagline:'Contributor experience, governance, licensing, advocacy',
+      chars:[
+        {id:'com1', name:'Elena Morales', archetype:'The Community Builder', version:'V6',
+         focus:'Contributor experience, governance, recognition systems', tags:['community','onboarding'],
+         findings:[
+           {sev:'HIGH', text:'No CONTRIBUTING.md', tags:['community','documentation']},
+           {sev:'HIGH', text:'Community governance model absent', tags:['community','governance']},
+           {sev:'MED', text:'Contributor pathway not defined', tags:['community','onboarding']},
+           {sev:'MED', text:'No recognition system for contributors', tags:['community']}]},
+        {id:'com2', name:'Tomás Oliveira', archetype:'The Maintainer', version:'V6',
+         focus:'Issue triage, PR review cadence, maintainer burnout prevention', tags:['community','governance'],
+         findings:[
+           {sev:'HIGH', text:'No issue triage workflow', tags:['community','governance']},
+           {sev:'HIGH', text:'Semantic versioning not implemented', tags:['community','devops']},
+           {sev:'MED', text:'PR review SLA not defined', tags:['community','metrics']},
+           {sev:'MED', text:'No maintainer documentation', tags:['community','documentation']}]},
+        {id:'com3', name:'Dr. Laura Martinez', archetype:'The Open Source Researcher', version:'V8',
+         focus:'Community health metrics, contributor diversity, bus factor', tags:['community','metrics'],
+         findings:[
+           {sev:'CRIT', text:'Bus factor = 1 — single person knows entire codebase', tags:['community','reliability']},
+           {sev:'HIGH', text:'Contributor diversity not tracked', tags:['community','metrics']},
+           {sev:'HIGH', text:'No onboarding pathway for new contributors', tags:['community','onboarding']},
+           {sev:'MED', text:'Issue response time not measured', tags:['community','metrics']}]}]},{
+      num:'13', title:'Onboarding & Training', tagline:'First-run experience, interactive tutorials, learning progression',
+      chars:[
+        {id:'ob1', name:'Dr. Rachel Kim', archetype:'The Learning Scientist', version:'V6',
+         focus:'Cognitive load theory, spaced repetition, mental model formation', tags:['onboarding','ux'],
+         findings:[
+           {sev:'HIGH', text:'No structured onboarding flow', tags:['onboarding']},
+           {sev:'MED', text:'Cognitive load of first run too high', tags:['onboarding','ux']},
+           {sev:'MED', text:'No progressive disclosure of features', tags:['onboarding','ux']}]},
+        {id:'ob2', name:'Carlos Mendez', archetype:'The Onboarding Engineer', version:'V6',
+         focus:'First-commit experience, dev environment setup, milestones', tags:['onboarding','devops'],
+         findings:[
+           {sev:'HIGH', text:'First-run experience is a blank prompt', tags:['onboarding','ux']},
+           {sev:'HIGH', text:'No onboarding milestones or checkpoints', tags:['onboarding']},
+           {sev:'MED', text:'No welcome message or sample queries', tags:['onboarding','ux']}]},
+        {id:'ob3', name:'Dr. Emily Watson', archetype:'The Education Researcher', version:'V8',
+         focus:'Self-determination theory, intrinsic motivation, onboarding efficacy', tags:['onboarding','metrics'],
+         findings:[
+           {sev:'HIGH', text:'No efficacy measurement of onboarding', tags:['onboarding','metrics']},
+           {sev:'HIGH', text:'First-task success rate not tracked', tags:['onboarding','metrics']},
+           {sev:'HIGH', text:'Onboarding completion rate unknown', tags:['onboarding','metrics']},
+           {sev:'MED', text:'No feedback loop for onboarding improvement', tags:['onboarding']}]}]},{
+      num:'14', title:'Ecosystem & Platform', tagline:'Plugin system, API surface, integrations, marketplace',
+      chars:[
+        {id:'eco1', name:'Alex Chen', archetype:'The DevRel Lead', version:'V3',
+         focus:'Ecosystem integration, community pathways, plugin marketplace', tags:['ecosystem','community'],
+         findings:[
+           {sev:'HIGH', text:'Plugin API undocumented and untested', tags:['ecosystem','documentation','testing']},
+           {sev:'HIGH', text:'No well-known extension points', tags:['ecosystem','architecture']},
+           {sev:'MED', text:'Dashboard API has no versioning', tags:['ecosystem','devops']},
+           {sev:'LOW', text:'No webhook system', tags:['ecosystem']}]},
+        {id:'eco2', name:'Dr. Nina Sharma', archetype:'The Ecosystem Director', version:'V8',
+         focus:'Platform strategy, API surface design, developer adoption', tags:['ecosystem','architecture'],
+         findings:[
+           {sev:'HIGH', text:'No public API surface defined', tags:['ecosystem','documentation']},
+           {sev:'HIGH', text:'No SDK for programmatic use', tags:['ecosystem']},
+           {sev:'HIGH', text:'API versioning strategy absent', tags:['ecosystem','devops']},
+           {sev:'MED', text:'No rate limiting on public API', tags:['ecosystem','security']}]},
+        {id:'eco3', name:'Naomi Chen', archetype:'The API Platform Architect', version:'V5',
+         focus:'API design, documentation, SDK generation, backward compatibility', tags:['ecosystem','documentation'],
+         findings:[
+           {sev:'HIGH', text:'No formal API contract or spec', tags:['ecosystem','documentation']},
+           {sev:'HIGH', text:'No SDK or client library available', tags:['ecosystem']},
+           {sev:'MED', text:'No backward compatibility policy', tags:['ecosystem','governance']},
+           {sev:'MED', text:'No API changelog', tags:['ecosystem','documentation']}]}]},{
+      num:'15', title:'AI/Agent Quality', tagline:'Reasoning quality, prompt architecture, hallucination, alignment',
+      chars:[
+        {id:'ai1', name:'Dr. Mei-Lin Hu', archetype:'The AI Reasoning Judge', version:'V3',
+         focus:'Agent reasoning quality, prompt architecture, hallucination rates', tags:['ai-quality','testing'],
+         findings:[
+           {sev:'HIGH', text:'No structured prompt template system', tags:['ai-quality']},
+           {sev:'HIGH', text:'No tool-calling accuracy metrics', tags:['ai-quality','metrics']},
+           {sev:'MED', text:'Hallucination detection absent', tags:['ai-quality','testing']},
+           {sev:'MED', text:'Chain-of-thought invisible to user', tags:['ai-quality','ux']}]},
+        {id:'ai2', name:'Dr. James Park', archetype:'The Alignment Researcher', version:'V8',
+         focus:'Goal misgeneralization detection, specification gaming analysis', tags:['ai-quality','security'],
+         findings:[
+           {sev:'CRIT', text:'No specification gaming detection', tags:['ai-quality','testing']},
+           {sev:'HIGH', text:'Goal misgeneralization not tested', tags:['ai-quality','testing']},
+           {sev:'HIGH', text:'No behavioral boundary testing', tags:['ai-quality','testing']},
+           {sev:'MED', text:'Prompt extraction vulnerability', tags:['ai-quality','security']}]},
+        {id:'ai3', name:'Dr. Rajesh Patel', archetype:'The AI Evaluator', version:'V5',
+         focus:'LLM evaluation frameworks, benchmark design, regression detection', tags:['ai-quality','testing','metrics'],
+         findings:[
+           {sev:'HIGH', text:'No evaluation framework for AI answers', tags:['ai-quality','testing']},
+           {sev:'HIGH', text:'Regression detection absent', tags:['ai-quality','testing']},
+           {sev:'MED', text:'No benchmark suite for domain tasks', tags:['ai-quality','testing']}]},
+        {id:'ai4', name:'Priya Desai', archetype:'The Multi-Agent Orchestrator', version:'V5',
+         focus:'Agent-to-agent communication, delegation correctness, context preservation', tags:['ai-quality','architecture'],
+         findings:[
+           {sev:'HIGH', text:'Agent delegation correctness not verified', tags:['ai-quality','testing']},
+           {sev:'HIGH', text:'Context preservation across handoffs not tested', tags:['ai-quality','testing']},
+           {sev:'MED', text:'Circular delegation not detected', tags:['ai-quality','testing']}]}]}]},{
+    id:'conclusions', title:'Domain Final Thoughts & Conclusions', icon:'◇', iconClass:'s3',
+    subtitle:'Synthesis and oversight — legal, financial, governance, accessibility, and global readiness.',
+    domains:[{
+      num:'16', title:'Product & Market', tagline:'Market positioning, competitive analysis, adoption, growth',
+      chars:[
+        {id:'pr1', name:'Sarah Okafor', archetype:'The Market Realist', version:'V1',
+         focus:'UX, feature completeness, adoption barriers, release readiness', tags:['product','ux'],
+         findings:[
+           {sev:'CRIT', text:'Credential acquisition is #1 funnel bottleneck', tags:['product','security','ux']},
+           {sev:'HIGH', text:'Elevator pitch is unclear', tags:['product','documentation']},
+           {sev:'HIGH', text:'Feature surface without usage guidance', tags:['product','onboarding']},
+           {sev:'MED', text:'Missing success signals after task completion', tags:['product','ux']}]},
+        {id:'pr2', name:'Dr. Michael Torres', archetype:'The Product Strategist', version:'V8',
+         focus:'Product-market fit assessment, competitive positioning, prioritization', tags:['product','metrics'],
+         findings:[
+           {sev:'HIGH', text:'No product-market fit survey conducted', tags:['product','metrics']},
+           {sev:'HIGH', text:'Competitive positioning ambiguous', tags:['product']},
+           {sev:'HIGH', text:'No adoption funnel metrics', tags:['product','metrics']},
+           {sev:'MED', text:'Pricing model undefined', tags:['product','cost']}]},
+        {id:'pr3', name:'Sophie Lambert', archetype:'The Activation Architect', version:'V3',
+         focus:'Time-to-first-success, onboarding flow, messaging, feedback loops', tags:['product','onboarding'],
+         findings:[
+           {sev:'CRIT', text:'Time-to-first-success exceeds 15 minutes', tags:['product','onboarding']},
+           {sev:'HIGH', text:'No guided first query', tags:['product','onboarding']},
+           {sev:'MED', text:'No success signals during onboarding', tags:['product','onboarding']}]},
+        {id:'pr4', name:'Maya Krishnan', archetype:'The Growth Architect', version:'V5',
+         focus:'Activation loops, retention mechanics, virality potential', tags:['product','community'],
+         findings:[
+           {sev:'HIGH', text:'No activation loop analysis', tags:['product','metrics']},
+           {sev:'MED', text:'Retention mechanics absent', tags:['product']},
+           {sev:'MED', text:'User telemetry ethics not documented', tags:['product','governance']}]}]},{
+      num:'17', title:'Legal & Compliance', tagline:'Licensing, privacy, AI ethics, regulatory compliance',
+      chars:[
+        {id:'lg1', name:'Dr. Sarah Mitchell', archetype:'The Legal Guardian', version:'V7',
+         focus:'Software licensing, open source compliance, IP protection', tags:['legal','compliance'],
+         findings:[
+           {sev:'HIGH', text:'License headers missing from source files', tags:['legal','community']},
+           {sev:'HIGH', text:'Dependency license compliance not checked', tags:['legal','devops']},
+           {sev:'MED', text:'No IP assignment agreement', tags:['legal']},
+           {sev:'MED', text:'No third-party notice file', tags:['legal','documentation']}]},
+        {id:'lg2', name:'James Okafor', archetype:'The Privacy Officer', version:'V7',
+         focus:'Data privacy, PII handling, GDPR compliance, privacy policy', tags:['legal','data','security'],
+         findings:[
+           {sev:'HIGH', text:'No privacy policy exists', tags:['legal','security']},
+           {sev:'HIGH', text:'PII may be captured in telemetry logs', tags:['data','security','legal']},
+           {sev:'MED', text:'User data export/deletion not supported', tags:['data','legal']}]},
+        {id:'lg3', name:'Dr. Thomas Wright', archetype:'The Tech Lawyer', version:'V8',
+         focus:'Regulatory compliance, export controls, liability frameworks', tags:['legal','compliance'],
+         findings:[
+           {sev:'HIGH', text:'No terms of service', tags:['legal']},
+           {sev:'HIGH', text:'GDPR compliance not assessed', tags:['legal','compliance']},
+           {sev:'HIGH', text:'No data processing agreement', tags:['legal','data']},
+           {sev:'MED', text:'Export control classification not determined', tags:['legal']}]}]},{
+      num:'18', title:'Cost & FinOps', tagline:'Cloud costs, API costs, TCO, pricing models, metering',
+      chars:[
+        {id:'co1', name:'Dr. Anita Rao', archetype:'The FinOps Strategist', version:'V7',
+         focus:'Cloud cost allocation, cost attribution, unit economics', tags:['cost','metrics'],
+         findings:[
+           {sev:'HIGH', text:'No cost tracking infrastructure', tags:['cost','metrics']},
+           {sev:'MED', text:'Cost per user not calculated', tags:['cost','metrics']},
+           {sev:'MED', text:'No unit economics model', tags:['cost']}]},
+        {id:'co2', name:'Tom Baker', archetype:'The API Cost Engineer', version:'V7',
+         focus:'API token cost optimization, caching strategies, retry cost analysis', tags:['cost','performance'],
+         findings:[
+           {sev:'HIGH', text:'API call costs not tracked', tags:['cost','metrics']},
+           {sev:'HIGH', text:'No caching strategy for repeat queries', tags:['cost','performance']},
+           {sev:'MED', text:'Retry storms amplify costs', tags:['cost','reliability']},
+           {sev:'MED', text:'No cost budget or alerting', tags:['cost','devops']}]},
+        {id:'co3', name:'Andrea Ricci', archetype:'The FinOps Operator', version:'V8',
+         focus:'Daily cost operations, resource right-sizing, reserved instances', tags:['cost','devops'],
+         findings:[
+           {sev:'HIGH', text:'No daily cost monitoring', tags:['cost','metrics']},
+           {sev:'HIGH', text:'Cost anomalies not detected', tags:['cost','metrics']},
+           {sev:'MED', text:'Cloud waste not identified', tags:['cost']},
+           {sev:'LOW', text:'No FinOps dashboard', tags:['cost','ux']}]}]},{
+      num:'19', title:'Governance & Policy', tagline:'Data governance, AI policy, security policy, corporate governance',
+      chars:[
+        {id:'gv1', name:'Dr. Katherine Blake', archetype:'The Governance Officer', version:'V7',
+         focus:'Corporate governance, decision rights, accountability framework', tags:['governance','compliance'],
+         findings:[
+           {sev:'HIGH', text:'No governance framework documented', tags:['governance','documentation']},
+           {sev:'HIGH', text:'Decision rights not assigned', tags:['governance']},
+           {sev:'MED', text:'No accountability matrix', tags:['governance']},
+           {sev:'MED', text:'Governance review cadence not established', tags:['governance']}]},
+        {id:'gv2', name:'Marcus Chen', archetype:'The Data Governor', version:'V7',
+         focus:'Data governance, data quality, data lineage, classification', tags:['governance','data'],
+         findings:[
+           {sev:'HIGH', text:'No data classification policy', tags:['governance','data']},
+           {sev:'HIGH', text:'Data lineage not tracked', tags:['governance','data']},
+           {sev:'MED', text:'Data quality metrics absent', tags:['governance','metrics']},
+           {sev:'MED', text:'No data retention schedule', tags:['governance','data']}]},
+        {id:'gv3', name:'Dr. Fiona Black', archetype:'The Corporate Governance Expert', version:'V8',
+         focus:'Risk management, internal controls, compliance reporting', tags:['governance','compliance'],
+         findings:[
+           {sev:'HIGH', text:'No risk register maintained', tags:['governance']},
+           {sev:'HIGH', text:'Internal controls not documented', tags:['governance','documentation']},
+           {sev:'MED', text:'Compliance reporting not automated', tags:['governance','devops']},
+           {sev:'MED', text:'No conflict of interest policy', tags:['governance']}]}]},{
+      num:'20', title:'Accessibility', tagline:'Screen readers, cognitive accessibility, inclusive design, AT',
+      chars:[
+        {id:'ac1', name:'Dr. Jennifer Holloway', archetype:'The Accessibility Architect', version:'V7',
+         focus:'Terminal accessibility, screen readers, braille displays, WCAG', tags:['accessibility','ux'],
+         findings:[
+           {sev:'HIGH', text:'Terminal output not screen-reader friendly', tags:['accessibility','ux']},
+           {sev:'HIGH', text:'No WCAG compliance assessment', tags:['accessibility','compliance']},
+           {sev:'MED', text:'No alternative text for emoji status indicators', tags:['accessibility','ux']}]},
+        {id:'ac2', name:'Dr. Lisa Chen', archetype:'The Cognitive Accessibility Advocate', version:'V7',
+         focus:'Cognitive load reduction, attention management, error prevention', tags:['accessibility','ux'],
+         findings:[
+           {sev:'HIGH', text:'Information density too high for cognitive accessibility', tags:['accessibility','ux']},
+           {sev:'MED', text:'Attention not managed — too many simultaneous updates', tags:['accessibility','ux']},
+           {sev:'MED', text:'Error prevention mechanisms absent', tags:['accessibility','error-handling']},
+           {sev:'LOW', text:'No focus mode for reduced distraction', tags:['accessibility','ux']}]},
+        {id:'ac3', name:'Dr. Rachel Green', archetype:'The Assistive Tech Researcher', version:'V8',
+         focus:'Emerging AT, gaze interaction, switch access, voice control', tags:['accessibility','ux'],
+         findings:[
+           {sev:'HIGH', text:'No voice control compatibility', tags:['accessibility']},
+           {sev:'HIGH', text:'Switch access not supported', tags:['accessibility']},
+           {sev:'HIGH', text:'No accessibility roadmap', tags:['accessibility','documentation']},
+           {sev:'MED', text:'Terminal-based AT barriers not documented', tags:['accessibility','documentation']}]}]},{
+      num:'21', title:'Localization & i18n', tagline:'i18n/l10n framework, cross-cultural design, locale support',
+      chars:[
+        {id:'i18n1', name:'Dr. Yuki Tanaka', archetype:'The i18n Engineer', version:'V7',
+         focus:'i18n framework, locale support, Unicode handling, RTL text', tags:['i18n','ux'],
+         findings:[
+           {sev:'HIGH', text:'No i18n framework implemented', tags:['i18n']},
+           {sev:'HIGH', text:'Only English supported', tags:['i18n']},
+           {sev:'MED', text:'Unicode edge cases not tested', tags:['i18n','testing']},
+           {sev:'MED', text:'RTL text not handled', tags:['i18n','ux']}]},
+        {id:'i18n2', name:'Sofia Andersen', archetype:'The Localization Manager', version:'V7',
+         focus:'Localization workflow, translation management, locale prioritization', tags:['i18n','community'],
+         findings:[
+           {sev:'HIGH', text:'No localization workflow defined', tags:['i18n']},
+           {sev:'HIGH', text:'No translation management system', tags:['i18n']},
+           {sev:'MED', text:'Locale priority list not established', tags:['i18n']}]},
+        {id:'i18n3', name:'Dr. Jean-Pierre Dubois', archetype:'The Linguistics Professor', version:'V8',
+         focus:'NLP, linguistic diversity, dialect handling, cultural adaptation', tags:['i18n','ux'],
+         findings:[
+           {sev:'HIGH', text:'No locale detection', tags:['i18n']},
+           {sev:'HIGH', text:'Cultural assumptions in examples', tags:['i18n','ux']},
+           {sev:'MED', text:'Date/time/number formatting not i18n-aware', tags:['i18n']},
+           {sev:'MED', text:'No pluralization rules', tags:['i18n']}]}]}]}]};
+
+// ═══════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════
+let selected = new Map();
+let activeFilters = new Set();
+let allTags = new Set();
+let charTags = {}; // charId -> [tags]
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════════
+function saveUIState() {
+  const s = { groups: {}, domains: {}, findings: {} };
+  document.querySelectorAll('.group-header').forEach((g,i) => { s.groups['g-'+i] = g.classList.contains('open') });
+  document.querySelectorAll('.domain').forEach(d => { s.domains[d.id] = d.classList.contains('open') });
+  document.querySelectorAll('.findings').forEach(f => { s.findings[f.id] = f.classList.contains('open') });
+  return s;
+}
+function restoreUIState(s) {
+  document.querySelectorAll('.group-body').forEach((b,i) => { b.classList.toggle('open', !!s.groups['g-'+i]) });
+  document.querySelectorAll('.group-header').forEach((g,i) => { g.classList.toggle('open', !!s.groups['g-'+i]) });
+  document.querySelectorAll('.domain').forEach(d => { if (s.domains[d.id]) d.classList.add('open') });
+  document.querySelectorAll('.findings').forEach(f => { if (s.findings[f.id]) f.classList.add('open') });
+}
+function render() {
+  const state = saveUIState();
+  const app = document.getElementById('app');
+  let html = '';
+  for (const [gi, group] of DATA.groups.entries()) {
+    const visible = countVisible(group);
+    html += `<div class="group">`;
+    html += `<div class="group-header" onclick="toggleGroup(this)">
+      <div class="icon ${group.iconClass}">${group.icon}</div>
+      <h2>${group.title}</h2>
+      <span class="stat">${visible} visible</span>
+      <span class="arrow">▼</span>
+    </div>`;
+    html += `<div class="group-body" id="g-${gi}">`;
+    for (const domain of group.domains) {
+      const domainHidden = domain.chars.every(ch => activeFilters.size > 0 && !ch.tags.some(t => activeFilters.has(t)));
+      const cls = domainHidden ? 'domain hidden' : 'domain';
+      html += `<div class="${cls}" id="d-${domain.num}">`;
+      html += `<div class="domain-header" onclick="toggleDomain(this)">
+        <span class="num">${domain.num}</span>
+        <h3>${domain.title}</h3>
+        <span class="tagline">${domain.tagline}</span>
+        <span class="char-count">${domain.chars.length}</span>
+        <span class="arrow">▼</span>
+      </div>`;
+      html += `<div class="domain-body">`;
+      for (const ch of domain.chars) {
+        const sid = ch.id;
+        const sel = selected.has(sid);
+        const faded = activeFilters.size > 0 && !ch.tags.some(t => activeFilters.has(t));
+        const charCls = `character ${sel?'selected':''} ${faded?'faded':''}`;
+        html += `<div class="${charCls}" id="c-${sid}" onclick="toggleChar('${sid}')">`;
+        html += `<div class="checkbox">${sel?'✓':''}</div>`;
+        html += `<div class="info">`;
+        html += `<div class="name">${ch.name} <span class="version">${ch.version}</span></div>`;
+        html += `<div class="archetype">${ch.archetype}</div>`;
+        html += `<div class="focus">${ch.focus}</div>`;
+        // Tags
+        html += `<div class="tags">`;
+        for (const t of ch.tags) {
+          const active = activeFilters.has(t);
+          html += `<span class="tag ${active?'active':''}" onclick="event.stopPropagation();toggleFilter('${t}')">${t}</span>`;
+        }
+        html += `</div>`;
+        // Findings toggle
+        html += `<span class="findings-toggle" onclick="event.stopPropagation();toggleFindings('${sid}')">▼ ${ch.findings.length} findings</span>`;
+        html += `<div class="findings" id="f-${sid}">`;
+        for (const f of ch.findings) {
+          const ftags = f.tags || [];
+          html += `<div class="finding-item">`;
+          html += `<span class="sev sev-${f.sev.toLowerCase()}">${f.sev}</span>`;
+          html += `<span style="flex:1">${f.text}</span>`;
+          if (ftags.length) {
+            html += `<span class="finding-tags">${ftags.map(t=>`<span class="ftag">${t}</span>`).join('')}</span>`;
+          }
+          html += `</div>`;
+        }
+        html += `</div>`;
+        // Related section placeholder
+        html += `<div class="related-section" id="rs-${sid}"></div>`;
+        html += `</div></div>`;
+      }
+      html += `</div></div>`;
+    }
+    html += `</div></div>`;
+  }
+  app.innerHTML = html;
+  restoreUIState(state);
+  // Rebuild related sections for selected
+  for (const sid of selected.keys()) {
+    showRelated(sid);
+  }
+  updateFilters();
+  updateCounter();
+  updateBottomBar();
+}
+
+function countVisible(group) {
+  let total = 0;
+  for (const d of group.domains) {
+    for (const ch of d.chars) {
+      if (activeFilters.size === 0 || ch.tags.some(t => activeFilters.has(t))) total++;
+    }
+  }
+  return total;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// FILTERS
+// ═══════════════════════════════════════════════════════════════════
+function buildTagIndex() {
+  allTags.clear();
+  charTags = {};
+  for (const group of DATA.groups) {
+    for (const domain of group.domains) {
+      for (const ch of domain.chars) {
+        charTags[ch.id] = ch.tags || [];
+        for (const t of ch.tags) allTags.add(t);
+      }
+    }
+  }
+}
+
+function updateFilters() {
+  const bar = document.getElementById('filterBar');
+  if (activeFilters.size > 0) {
+    bar.innerHTML = `<span class="filter-tag clear-all" onclick="clearFilters()">✕ clear filters (${activeFilters.size})</span>`;
+  } else {
+    bar.innerHTML = '';
+  }
+  const sorted = Array.from(allTags).sort();
+  for (const t of sorted) {
+    const active = activeFilters.has(t);
+    const count = countByTag(t);
+    const cls = `filter-tag ${active?'active':''}`;
+    bar.innerHTML += `<span class="${cls}" onclick="toggleFilter('${t}')">${t} <span style="opacity:0.4;font-size:0.65rem">${count}</span></span>`;
+  }
+}
+
+function countByTag(tag) {
+  let n = 0;
+  for (const group of DATA.groups)
+    for (const domain of group.domains)
+      for (const ch of domain.chars)
+        if (ch.tags.includes(tag)) n++;
+  return n;
+}
+
+function toggleFilter(tag) {
+  if (activeFilters.has(tag)) activeFilters.delete(tag);
+  else activeFilters.add(tag);
+  render();
+}
+
+function clearFilters() {
+  activeFilters.clear();
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RELATED CHARACTERS
+// ═══════════════════════════════════════════════════════════════════
+function getRelated(charId, max=5) {
+  const ch = getCharData(charId);
+  if (!ch) return [];
+  const myTags = new Set(ch.tags);
+  let scored = [];
+  for (const group of DATA.groups) {
+    for (const domain of group.domains) {
+      for (const oc of domain.chars) {
+        if (oc.id === charId) continue;
+        const overlap = oc.tags.filter(t => myTags.has(t)).length;
+        if (overlap > 0) scored.push({ char: oc, score: overlap });
+      }
+    }
+  }
+  scored.sort((a,b) => b.score - a.score || a.char.name.localeCompare(b.char.name));
+  return scored.slice(0, max).map(s => s.char);
+}
+
+function showRelated(charId) {
+  const container = document.getElementById(`rs-${charId}`);
+  if (!container) return;
+  const related = getRelated(charId, 5);
+  if (related.length === 0) return;
+  container.classList.add('open');
+  let html = `<div class="label">Related characters</div><div class="related-chips">`;
+  for (const r of related) {
+    const sel = selected.has(r.id);
+    html += `<span class="related-chip ${sel?'selected-chip':''}" onclick="event.stopPropagation();toggleChar('${r.id}')">${r.name}</span>`;
+  }
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INTERACTIONS
+// ═══════════════════════════════════════════════════════════════════
+function toggleGroup(el) {
+  el.classList.toggle('open');
+  el.nextElementSibling.classList.toggle('open');
+}
+
+function toggleDomain(el) {
+  el.closest('.domain').classList.toggle('open');
+}
+
+function toggleChar(id) {
+  if (selected.has(id)) selected.delete(id);
+  else selected.set(id, getCharData(id));
+  render();
+}
+
+function toggleFindings(id) {
+  document.getElementById(`f-${id}`).classList.toggle('open');
+}
+
+function getCharData(id) {
+  for (const group of DATA.groups)
+    for (const domain of group.domains)
+      for (const ch of domain.chars)
+        if (ch.id === id) return { ...ch, domain: domain.title, domainNum: domain.num };
+  return null;
+}
+
+function clearAll() {
+  if (selected.size === 0) return;
+  selected.clear();
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════════════
+function toggleConfig() {
+  document.getElementById('configPanel').classList.toggle('open');
+}
+
+function updateConfig() {
+  const plans = parseInt(document.getElementById('pPlans').value) || 1;
+  const phases = parseInt(document.getElementById('pPhases').value) || 1;
+  const stages = parseInt(document.getElementById('pStages').value) || 1;
+  const sections = parseInt(document.getElementById('pSections').value) || 1;
+  const tasks = parseInt(document.getElementById('pTasks').value) || 1;
+  const perChar = plans * phases * stages * sections * tasks;
+  const total = perChar * selected.size;
+  document.getElementById('perCharTotal').textContent = perChar.toLocaleString();
+  document.getElementById('grandTotal').textContent = total.toLocaleString();
+  document.getElementById('configDetail').textContent =
+    `${plans} plans × ${phases} phases × ${stages} stages × ${sections} sections × ${tasks} tasks`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PREVIEW
+// ═══════════════════════════════════════════════════════════════════
+function showPreview() {
+  if (selected.size === 0) return;
+  const plans = parseInt(document.getElementById('pPlans').value) || 5;
+  const phases = parseInt(document.getElementById('pPhases').value) || 5;
+  const stages = parseInt(document.getElementById('pStages').value) || 5;
+  const sections = parseInt(document.getElementById('pSections').value) || 5;
+  const tasks = parseInt(document.getElementById('pTasks').value) || 5;
+  const perChar = plans * phases * stages * sections * tasks;
+  const total = perChar * selected.size;
+  const picks = Array.from(selected.values());
+
+  let html = '';
+  for (const [ci, ch] of picks.entries()) {
+    html += `<div class="preview-plan">`;
+    html += `<div class="preview-plan-header" onclick="this.nextElementSibling.classList.toggle('open')">
+      <span style="color:var(--accent)">${ci+1}.</span>
+      ${ch.name} <span style="color:var(--text3);font-weight:400">— ${ch.archetype}</span>
+      <span style="margin-left:auto;color:var(--text3);font-size:0.7rem">${ch.domain}</span>
+    </div>`;
+    html += `<div class="preview-plan-body open">`;
+    for (let pi = 0; pi < Math.min(plans, 3); pi++) {
+      html += `<div class="preview-phase"><span class="phase-num">Plan ${pi+1}:</span> ${getPlanName(pi, ch)}</div>`;
+      html += `<div style="padding-left:16px;margin:2px 0 6px;font-size:0.68rem;color:var(--text3)">`;
+      for (let si = 0; si < Math.min(phases, 2); si++) {
+        html += `&nbsp;&nbsp;Phase ${si+1}: ${phases} stages × ${sections} sections × ${tasks} tasks`;
+        if (si < Math.min(phases, 2)-1) html += `<br>`;
+      }
+      if (phases > 2) html += `<br>&nbsp;&nbsp;... +${phases-2} more phases`;
+      html += `</div>`;
+    }
+    if (plans > 3) html += `<div class="preview-phase" style="color:var(--text3)">... +${plans-3} more plans</div>`;
+    html += `</div></div>`;
+  }
+
+  html += `<div class="preview-total">
+    <strong>${total.toLocaleString()}</strong> total tasks ·
+    ${perChar.toLocaleString()} per character ·
+    ${plans} plans × ${phases} phases × ${stages} stages × ${sections} sections × ${tasks} tasks ·
+    ${selected.size} characters
+  </div>`;
+
+  // Files to be generated
+  html += `<div style="margin-top:12px;padding:10px 14px;background:var(--bg2);border-radius:var(--radius-sm)">`;
+  html += `<div style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">Files to be generated</div>`;
+  for (const ch of picks) {
+    const slug = ch.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    html += `<div style="font-size:0.8rem;padding:2px 0;color:var(--text2)">
+      critiques/${slug}/<span style="color:var(--accent)">critique.md</span> ·
+      <span style="color:var(--indigo)">plan.md</span> ·
+      <span style="color:var(--green)">todo.md</span>
+    </div>`;
+  }
+  html += `</div>`;
+
+  document.getElementById('previewBody').innerHTML = html;
+  document.getElementById('previewOverlay').classList.add('open');
+}
+
+function getPlanName(i, ch) {
+  const names = [
+    'Architecture & Foundations',
+    'Security Hardening & Reliability',
+    'Performance & Scalability',
+    'UX & Documentation',
+    'Testing & Quality Assurance',
+    'DevOps & Infrastructure',
+    'Community & Ecosystem',
+    'Governance & Compliance',
+    'Accessibility & i18n',
+    'Product & Market',
+  ];
+  return names[i % names.length] + ' — ' + ch.name;
+}
+
+function hidePreview() {
+  document.getElementById('previewOverlay').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// GENERATE
+// ═══════════════════════════════════════════════════════════════════
+function generate() {
+  if (selected.size === 0) return;
+  const btn = document.getElementById('genBtn');
+  const orig = btn.textContent;
+  btn.textContent = 'Generating…';
+  btn.style.opacity = '0.7';
+  btn.style.pointerEvents = 'none';
+
+  setTimeout(() => {
+    const plans = parseInt(document.getElementById('pPlans').value) || 5;
+    const phases = parseInt(document.getElementById('pPhases').value) || 5;
+    const stages = parseInt(document.getElementById('pStages').value) || 5;
+    const sections = parseInt(document.getElementById('pSections').value) || 5;
+    const tasks = parseInt(document.getElementById('pTasks').value) || 5;
+    const perChar = plans * phases * stages * sections * tasks;
+    const total = perChar * selected.size;
+    const picks = Array.from(selected.values());
+
+    // Build full preview content with ready state
+    let html = '<div style="padding:8px 0">';
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(91,207,138,0.1);border:1px solid rgba(91,207,138,0.2);border-radius:var(--radius-sm);margin-bottom:16px">';
+    html += '<span style="font-size:1.3rem">✓</span>';
+    html += '<div><div style="font-weight:500;color:var(--green)">Generation Ready</div>';
+    html += '<div style="font-size:0.75rem;color:var(--text3)">' + selected.size + ' characters · ' + total.toLocaleString() + ' total tasks</div></div></div>';
+
+    html += '<div style="font-size:0.78rem;color:var(--text2);margin-bottom:10px">Characters selected:</div>';
+    for (const [ci, ch] of picks.entries()) {
+      const slug = ch.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      html += '<div class="preview-plan" style="margin-bottom:8px">';
+      html += '<div class="preview-plan-header" style="cursor:default">';
+      html += '<span style="color:var(--accent);font-weight:500">' + (ci+1) + '.</span> ';
+      html += ch.name + ' <span style="color:var(--text3);font-weight:400">— ' + ch.archetype + '</span>';
+      html += '<span style="margin-left:auto;color:var(--text3);font-size:0.68rem">' + ch.domain + '</span>';
+      html += '</div>';
+      html += '<div style="padding:8px 14px 10px;font-size:0.72rem;color:var(--text3);border-top:1px solid var(--border)">';
+      html += '📄 critiques/' + slug + '/<span style="color:var(--accent)">critique.md</span> · <span style="color:var(--indigo)">plan.md</span> · <span style="color:var(--green)">todo.md</span>';
+      html += '<br>Total: ' + perChar.toLocaleString() + ' tasks (' + plans + '×' + phases + '×' + stages + '×' + sections + '×' + tasks + ')';
+      html += '</div></div>';
+    }
+
+    html += '<div class="preview-total" style="margin-top:8px">';
+    html += '<strong style="font-size:1.2rem">' + total.toLocaleString() + '</strong> tasks across <strong>' + selected.size + '</strong> characters';
+    html += '<div style="font-size:0.72rem;color:var(--text3);margin-top:2px">Plans: ' + plans + ' · Phases: ' + (plans*phases) + ' · Stages: ' + (plans*phases*stages) + ' · Sections: ' + (plans*phases*stages*sections) + ' · Tasks: ' + total + '</div>';
+    html += '</div></div>';
+
+    document.getElementById('previewBody').innerHTML = html;
+    document.getElementById('previewOverlay').classList.add('open');
+
+    btn.textContent = orig;
+    btn.style.opacity = '';
+    btn.style.pointerEvents = '';
+  }, 400);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// UI UPDATES
+// ═══════════════════════════════════════════════════════════════════
+function updateCounter() {
+  document.querySelectorAll('#selectedCount').forEach(c => c.textContent = selected.size);
+}
+
+function updateBottomBar() {
+  const container = document.getElementById('picksContainer');
+  const genBtn = document.getElementById('genBtn');
+  const picks = Array.from(selected.values());
+  if (picks.length === 0) {
+    container.innerHTML = `<span class="empty-slots">Select characters above</span>`;
+  } else {
+    let html = '';
+    for (const ch of picks) {
+      html += `<span class="pick-slot">${ch.name} <span class="remove" onclick="toggleChar('${ch.id}')">✕</span></span>`;
+    }
+    container.innerHTML = html;
+  }
+  genBtn.classList.toggle('active', picks.length > 0);
+  genBtn.textContent = picks.length > 0 ? `Generate (${picks.length})` : 'Select characters';
+  updateConfig();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════
+buildTagIndex();
+document.addEventListener('DOMContentLoaded', render);
+</script>
+</body>
+</html>

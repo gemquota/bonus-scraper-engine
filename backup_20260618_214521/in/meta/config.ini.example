@@ -1,0 +1,26 @@
+[SETTINGS]
+# Scraper delay between requests (seconds)
+min_delay=1.0
+max_delay=3.0
+
+# Security: Web Dashboard Credentials (MANDATORY: Change these)
+ui_user=admin
+ui_pass=password
+
+# Algorithm: Default value for perceived value calculation if max_withdraw is unknown
+default_max_withdraw=3776.0
+
+# API: AbuseIPDB Key for proxy health monitoring
+# abuseipdb_key=YOUR_API_KEY_HERE
+
+[BRIGHTDATA]
+zone_name=YOUR_ZONE_NAME
+api_token=YOUR_API_TOKEN
+proxy_user=YOUR_PROXY_USER
+proxy_pass=YOUR_PROXY_PASS
+proxy_port=22225
+
+[U1]
+# Credentials for target site accounts
+u=YOUR_USERNAME
+p=YOUR_PASSWORD

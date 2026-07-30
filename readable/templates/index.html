@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scraper Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function Dashboard() {
+            const [stats, setStats] = useState({
+                index: 0, successes: 0, failures: 0, total_bonuses: 0, site_url: "Waiting...", status_message: "-", N: 0
+            });
+            const [history, setHistory] = useState([]);
+
+            useEffect(() => {
+                const ws = new WebSocket(`ws://${window.location.host}/ws`);
+                ws.onmessage = (event) => {
+                    const data = json.parse(event.data);
+                    setStats(data);
+                    setHistory(prev => [data, ...prev].slice(0, 10));
+                };
+                return () => ws.close();
+            }, []);
+
+            return (
+                <div class="container py-10">
+                    <h1 class="text-4xl font-bold mb-8 text-cyan-400">Scraper Command Center</h1>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
+                        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                            <div class="text-gray-400 text-sm uppercase">Progress</div>
+                            <div class="text-3xl font-bold">{stats.index} / {stats.N}</div>
+                        </div>
+                        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                            <div class="text-gray-400 text-sm uppercase">Success Rate</div>
+                            <div class="text-3xl font-bold text-green-400">
+                                {stats.index > 0 ? ((stats.successes / stats.index) * 100).toFixed(1) : 0}%
+                            </div>
+                        </div>
+                        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                            <div class="text-gray-400 text-sm uppercase">Total Bonuses</div>
+                            <div class="text-3xl font-bold text-yellow-400">{stats.total_bonuses}</div>
+                        </div>
+                        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                            <div class="text-gray-400 text-sm uppercase">Failures</div>
+                            <div class="text-3xl font-bold text-red-400">{stats.failures}</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
+                        <div class="p-4 bg-gray-700 font-bold">Live Activity</div>
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-800 text-gray-400 text-xs uppercase">
+                                <tr>
+                                    <th class="p-4">Site</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4">New</th>
+                                    <th class="p-4">ETC</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {history.map((row, i) => (
+                                    <tr key={i} class="border-t border-gray-700 hover:bg-gray-750 transition">
+                                        <td class="p-4 font-mono text-sm">{row.site_url}</td>
+                                        <td class="p-4">
+                                            <span class={`px-2 py-1 rounded text-xs ${row.status_message.includes('✅') ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}`}>
+                                                {row.status_message}
+                                            </span>
+                                        </td>
+                                        <td class="p-4 text-cyan-400">+{row.site_bonuses_gt_zero}</td>
+                                        <td class="p-4 text-gray-500 text-xs">{row.elapsed?.toFixed(2)}s</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<Dashboard />);
+    </script>
+</body>
+</html>
