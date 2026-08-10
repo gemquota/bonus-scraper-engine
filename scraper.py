@@ -22,6 +22,19 @@ USER_AGENTS = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
 ]
 
+BROWSER_CONFIGS = [
+    {"browser": "chrome",  "platform": "windows", "desktop": True},
+    {"browser": "chrome",  "platform": "darwin",  "desktop": True},
+    {"browser": "chrome",  "platform": "linux",   "desktop": True},
+    {"browser": "firefox", "platform": "windows", "desktop": True},
+    {"browser": "firefox", "platform": "darwin",  "desktop": True},
+    {"browser": "firefox", "platform": "linux",   "desktop": True},
+    {"browser": "chrome",  "platform": "windows", "desktop": True, "mobile": False},
+    {"browser": "chrome",  "platform": "darwin",  "desktop": True, "mobile": False},
+    {"browser": "firefox", "platform": "windows", "desktop": True, "mobile": False},
+    {"browser": "chrome",  "platform": "linux",   "desktop": True, "mobile": False},
+]
+
 def classify_error(exception):
     error_string = str(exception)
     if isinstance(exception, HTTPError):
@@ -41,6 +54,8 @@ def process_bonus(bonus, merchant_name, url, fingerprint, perceived_value, expir
         unique_id, mirrors = existing_records[0]
         if url not in str(mirrors):
             db.execute("UPDATE b SET mirrors=?, sl=CURRENT_TIMESTAMP WHERE uid=?", (f"{mirrors},{url}", unique_id))
+        else:
+            db.execute("UPDATE b SET sl=CURRENT_TIMESTAMP WHERE uid=?", (unique_id,))
         return unique_id, 0
         
     merchant_name_rows = db.execute("SELECT name, uid, mirrors FROM b WHERE mname=?", (merchant_name,))
@@ -51,6 +66,8 @@ def process_bonus(bonus, merchant_name, url, fingerprint, perceived_value, expir
             matched_row = next((row for row in merchant_name_rows if row[0] == matched_name), None)
             if matched_row and url not in str(matched_row[2]):
                 db.execute("UPDATE b SET mirrors=?, sl=CURRENT_TIMESTAMP WHERE uid=?", (f"{matched_row[2]},{url}", matched_row[1]))
+            elif matched_row:
+                db.execute("UPDATE b SET sl=CURRENT_TIMESTAMP WHERE uid=?", (matched_row[1],))
             return (matched_row[1] if matched_row else None), 0
             
     unique_id = f"{url}|{bonus.get('id')}"
@@ -122,11 +139,8 @@ def try_scrape_url(scraper_session, url, username, password, record_raw, chunk_i
         
     return True, html_content, site_bonuses, site_new
 
-def worker(chunk_id, stats, stats_lock, total_tasks, ip_score, record_raw, worker_count, tasks, proxy_pool, on_update):
-    scraper_session = net.create_session(random.choice(proxy_pool) if proxy_pool else None)
-    current_ua_index = 0
-    
-    for url, username, password in tasks:
+def worker(chunk_id, stats, stats_lock, total_tasks, pass_start, ip_score, record_raw, worker_count, tasks, proxy_pool, on_update):
+    for task_idx, (url, username, password) in enumerate(tasks):
         if server.STOPPED:
             break
         while server.PAUSED and not server.STOPPED:
@@ -149,11 +163,14 @@ def worker(chunk_id, stats, stats_lock, total_tasks, ip_score, record_raw, worke
         for attempt in range(max_retries):
             try:
                 if attempt > 0:
-                    current_ua_index = (current_ua_index + 1) % len(USER_AGENTS)
-                    scraper_session.headers.update({"User-Agent": USER_AGENTS[current_ua_index]})
-                    scraper_session.timeout = config.TIMEOUT + (attempt * 10)
                     time.sleep(random.uniform(2.0, 4.0) * attempt)
-                    
+                # Fresh session per URL — unique UA + browser fingerprint combo
+                combo_idx = chunk_id * 1000 + task_idx * 3 + attempt
+                browser_cfg = BROWSER_CONFIGS[combo_idx % len(BROWSER_CONFIGS)]
+                scraper_session = net.create_session(browser_config=browser_cfg)
+                scraper_session.headers.update({"User-Agent": USER_AGENTS[combo_idx % len(USER_AGENTS)]})
+                scraper_session.timeout = config.TIMEOUT + (attempt * 10)
+
                 success, html_content, site_bonuses, site_new = try_scrape_url(
                     scraper_session, url, username, password, record_raw, chunk_id
                 )
@@ -218,6 +235,17 @@ def worker(chunk_id, stats, stats_lock, total_tasks, ip_score, record_raw, worke
                 "nw": worker_count
             })
 
+        pos_in_pass = current_index - pass_start
+        if pos_in_pass % 50 == 0 or pos_in_pass == total_tasks:
+            with stats_lock["stats"]:
+                ok = stats["successes"]
+                fail = stats["failures"]
+                bonuses = stats["total_bonuses"]
+                newb = stats["new_bonuses"]
+            rate = (ok / current_index * 100) if current_index else 0
+            pct = (pos_in_pass / total_tasks * 100) if total_tasks else 0
+            print(f"[{current_index}/{pass_start + total_tasks}] {pct:.0f}% | OK:{ok}({rate:.1f}%) FAIL:{fail} BONUSES:{bonuses} NEW:{newb}", flush=True)
+
 def run_scrape(on_update=None, on_launcher=None, on_completion=None):
     resume_mode = "-r" in sys.argv
     shuffle_mode = "-s" in sys.argv
@@ -231,6 +259,8 @@ def run_scrape(on_update=None, on_launcher=None, on_completion=None):
     if not url_list or not account_list:
         server.IS_RUNNING = False
         return
+
+    Path("data/last_scrape_start.txt").write_text(datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
         
     execution_stats = {"index": 0, "successes": 0, "failures": 0, "total_bonuses": 0, "new_bonuses": 0}
     thread_locks = {"index": threading.Lock(), "stats": threading.Lock()}
@@ -247,11 +277,12 @@ def run_scrape(on_update=None, on_launcher=None, on_completion=None):
         max_workers = config.config_parser.getint("SETTINGS", "workers", fallback=10)
         num_workers = min(max_workers, len(task_list))
         task_chunks = [task_list[i::num_workers] for i in range(num_workers)]
+        pass_start = execution_stats["index"]
         
         with ThreadPoolExecutor(max_workers=num_workers) as executor:
             for i in range(num_workers):
                 executor.submit(
-                    worker, i, execution_stats, thread_locks, len(task_list), 
+                    worker, i, execution_stats, thread_locks, len(task_list), pass_start,
                     ip_score, record_raw_responses, num_workers, task_chunks[i], 
                     proxy_list, on_update
                 )

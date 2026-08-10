@@ -28,7 +28,7 @@ def create_session(proxy=None, browser_config=None):
     return scraper_session
 
 def post_json(session, url, data):
-    response = session.post(url, data=data, timeout=config.TIMEOUT)
+    response = session.post(url, data=data, timeout=getattr(session, "timeout", None) or config.TIMEOUT)
     response.raise_for_status()
     return response.json()
 
@@ -43,18 +43,19 @@ def _parklogic_redirect(session, html):
     payload = json.loads(base64.b64decode(match.group(1)))
     payload["parameters"].update({"adBlockingDetected": 0, "timezoneBrowser": "Australia/Sydney", "webdriver": 0, "gpu": None})
 
-    response = session.post("https://router.parklogic.com/", data=json.dumps(payload), timeout=config.TIMEOUT)
+    response = session.post("https://router.parklogic.com/", data=json.dumps(payload), timeout=getattr(session, "timeout", None) or config.TIMEOUT)
     if response.text[:4] == "http":
         return response.text
     return None
 
 def get_page(session, url):
-    response = session.get(url, timeout=config.TIMEOUT)
+    timeout = getattr(session, "timeout", None) or config.TIMEOUT
+    response = session.get(url, timeout=timeout)
     response.raise_for_status()
 
     redirect_url = _parklogic_redirect(session, response.text)
     if redirect_url:
-        response = session.get(redirect_url, timeout=config.TIMEOUT)
+        response = session.get(redirect_url, timeout=timeout)
 
     return response.text
 

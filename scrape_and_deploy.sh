@@ -20,7 +20,14 @@ c = conn.cursor()
 
 HEADERS = ['url','mname','id','name','transactiontype','bonusfixed','amount','minwithdraw','maxwithdraw','rollover','balance','claimconfig','claimcondition','bonus','bonusrandom','reset','mintopup','maxtopup','referlink','perceived_value','is_new']
 
-c.execute('SELECT uid, eid, u, v, pv, raw, exp, fp, mirrors, s1, sl, mname, name FROM b')
+import os
+marker = None
+if os.path.exists('data/last_scrape_start.txt'):
+    marker = open('data/last_scrape_start.txt').read().strip()
+cutoff = marker
+if not cutoff:
+    cutoff = c.execute(\"SELECT datetime('now','-1 day')\").fetchone()[0]
+c.execute('SELECT uid, eid, u, v, pv, raw, exp, fp, mirrors, s1, sl, mname, name FROM b WHERE sl >= ?', (cutoff,))
 rows = c.fetchall()
 
 with open('data/Dayne_Bonuses.csv', 'w', newline='') as f:
@@ -57,27 +64,31 @@ with open('data/Dayne_Bonuses.csv', 'w', newline='') as f:
 print(f'Exported {len(rows)} bonuses')
 "
 
+echo "=== Fresh-scrape CSV ==="
+cp data/Dayne_Bonuses.csv data/Dayne_Bonuses_Fresh.csv
+
 echo "=== Cleaning CSV ==="
 python3 clean_bonuses.py data/Dayne_Bonuses.csv
+
+echo "=== Building site + all-bonus CSVs ==="
+python3 build_sites_csv.py
 
 echo "=== Updating viewer app ==="
 cp data/Dayne_Bonuses.csv dayne-bonuses-viewer/public/dayne-bonuses.csv
 cp data/Dayne_Bonuses_Cleaned.csv dayne-bonuses-viewer/public/dayne-bonuses-cleaned.csv
+cp data/Dayne_Bonuses_All.csv dayne-bonuses-viewer/public/dayne-bonuses-all.csv
+cp data/Dayne_Sites.csv dayne-bonuses-viewer/public/dayne-sites.csv
+cp data/Dayne_Bonuses_Fresh.csv dayne-bonuses-viewer/public/dayne-bonuses-fresh.csv
 
 echo "=== Building viewer ==="
 cd dayne-bonuses-viewer
 npm run build 2>&1 | tail -5
 cp app.json icon.svg dist/ 2>/dev/null || true
-cd dist
-zip -qr ../dayne-bonuses.zip .
 
-echo "=== Deploying to Anyclaw ==="
-python3 -c "
-import json, base64
-with open('../dayne-bonuses.zip','rb') as f:
-    z = base64.b64encode(f.read()).decode()
-payload = {'app_id':'dayne-bonuses','zip_b64':z,'app_type':'web_app','site_map':['/']}
-print(json.dumps(payload))
-" | curl -s -X POST https://anyclaw.store/api/deploy -H "Content-Type: application/json" -d @- | python3 -c "import sys,json;d=json.load(sys.stdin);print('Deployed:',d.get('claim_url',d))"
+echo "=== Deploying to GitHub Pages ==="
+git add -A
+git commit -q -m "Update: fresh scrape $(date +%m-%d) + bonus data" || true
+git push origin main
+echo "Pushed — GitHub Actions deploys to https://gemquota.github.io/dayne-bonuses/"
 
 echo "=== Done ==="
