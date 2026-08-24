@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dayne Bonuses — Colour Lab</title>
+    <link rel="icon" type="image/svg+xml" href="/dayne-bonuses/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+      body { overflow: auto; height: auto; }
+      .lab { max-width: 1080px; margin: 0 auto; padding: 18px 20px 60px; }
+      .lab-head { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+      .lab-head h1 { font-size: 20px; font-weight: 800; color: var(--text); }
+      .lab-back { color: var(--accent); text-decoration: none; font-size: 13px; font-weight: 700; }
+      .lab-sub { color: var(--muted); font-size: 13px; margin-bottom: 18px; max-width: 760px; line-height: 1.55; }
+      .lab-sub code { font-family: var(--font-mono); color: #9fd4ff; }
+      .section-title { font-size: 13px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); margin: 26px 0 12px; }
+      .hint { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+      .palette { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 22px; }
+      .palette-chip { display: flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: 0.4px; }
+      .palette-chip .dot { width: 12px; height: 12px; border-radius: 50%; }
+
+      /* Palette generator */
+      .gen-box { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+      .gen-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px 18px; margin-bottom: 12px; }
+      .gen-field label { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+      .gen-field label b { color: #9fd4ff; font-family: var(--font-mono); font-size: 12px; }
+      .gen-field input[type="range"] { width: 100%; accent-color: var(--accent); }
+      .gen-preview { display: flex; flex-wrap: wrap; gap: 12px; padding: 10px 0 4px; }
+      .gen-dot { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+      .gen-dot .dot { width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); }
+      .gen-num { font-size: 10px; color: var(--muted); font-family: var(--font-mono); }
+      .gen-num b { color: #9fd4ff; font-weight: 600; }
+      .gen-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+      .gen-note { font-size: 12px; color: var(--muted); }
+
+      /* Accordion */
+      .acc { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); margin-bottom: 8px; overflow: hidden; }
+      .acc-sum { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; list-style: none; user-select: none; }
+      .acc-sum::-webkit-details-marker { display: none; }
+      .acc-sum:hover { background: var(--panel-2); }
+      .acc-sum .caret { transition: transform 0.15s; color: var(--muted); font-size: 10px; width: 10px; }
+      .acc[open] > .acc-sum .caret { transform: rotate(90deg); }
+      .acc-title { font-size: 13px; font-weight: 800; color: var(--text); }
+      .acc-meta { font-size: 11px; color: var(--muted); font-family: var(--font-mono); margin-left: auto; white-space: nowrap; }
+      .acc-hue { font-size: 11px; color: #9fd4ff; font-family: var(--font-mono); min-width: 54px; text-align: right; }
+      .acc-body { padding: 6px 14px 12px; border-top: 1px dashed var(--line-soft); }
+      .acc-2 { border-color: var(--line-soft); background: var(--panel-2); margin: 6px 0 0; border-radius: 10px; }
+      .acc-2 .acc-sum { padding: 7px 12px; }
+      .acc-2 .acc-title { font-size: 12px; font-weight: 700; }
+      .acc-2 .acc-body { padding: 4px 12px 10px; }
+      .swatch { width: 44px; height: 44px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0; }
+      .swatch.sm { width: 24px; height: 24px; border-radius: 8px; }
+      .swatch.xs { width: 16px; height: 16px; border-radius: 5px; }
+      .shade-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+      .shade-name { width: 56px; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; }
+      .shade-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+      .shade-val { font-family: var(--font-mono); font-size: 12px; color: #9fd4ff; min-width: 40px; text-align: right; }
+      .regex-line { font-size: 11px; color: var(--muted); font-family: var(--font-mono); padding: 6px 0 2px; word-break: break-all; }
+      .examples { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+      .ex-name { background: var(--panel); border: 1px solid var(--line-soft); border-radius: 8px; padding: 4px 8px; font-size: 11px; color: var(--text); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .col-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+      .col-chip { font-family: var(--font-mono); font-size: 11px; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--line); color: var(--text); }
+
+      /* Buttons */
+      .btn { padding: 9px 14px; font-size: 12px; font-weight: 800; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); color: var(--text); cursor: pointer; font-family: var(--font-body); }
+      .btn:hover { border-color: var(--accent); color: var(--accent); }
+      .btn.primary { background: var(--accent); color: #06101f; border-color: var(--accent); }
+      .btn.primary:hover { filter: brightness(1.1); color: #06101f; }
+      .btn.danger:hover { border-color: #ff6b6b; color: #ff6b6b; }
+      .btn.mini { padding: 3px 8px; font-size: 10px; border-radius: 7px; margin-top: 4px; }
+
+      .defaults-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 26px 0 6px; }
+      .defaults-note { font-size: 12px; color: var(--muted); }
+      .copy-row { margin: 22px 0 6px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+      .copy-btn { padding: 10px 18px; font-size: 13px; font-weight: 800; border: none; border-radius: 10px; background: var(--accent); color: #06101f; cursor: pointer; font-family: var(--font-body); }
+      .copy-btn:hover { filter: brightness(1.1); }
+      .copy-note { font-size: 12px; color: var(--muted); }
+    </style>
+    <script type="module" crossorigin src="/dayne-bonuses/assets/colors-DZiGiAeS.js"></script>
+    <link rel="modulepreload" crossorigin href="/dayne-bonuses/assets/colors-Bkso9loH.js">
+    <link rel="stylesheet" crossorigin href="/dayne-bonuses/assets/colors-BJsQ0z_J.css">
+  </head>
+  <body>
+    <div class="lab">
+      <div class="lab-head">
+        <a class="lab-back" href="./">← Viewer</a>
+        <h1>Colour Lab</h1>
+      </div>
+      <p class="lab-sub">
+        Live preview of the viewer's colour scheme. Categories (level 1) nest subtypes (level 2),
+        and every subtype carries up to three <b>shades</b> (level 3: soft / base / deep).
+        Column groups nest all 88 individual columns (level 2), each with its own hue slider —
+        columns you leave alone inherit their group hue, and ones you edit are tagged <b>custom</b>.
+        Use the palette generator to distribute any number of hues across the legend with a
+        growing spacing curve, or drag the accordion sliders directly. Copy the generated values
+        into <code>src/colors.js</code> (<code>TYPE_RULES</code> / <code>COLUMN_GROUPS</code> / <code>COL_HUES</code>) to make them permanent.
+      </p>
+
+      <div class="section-title">Palette generator</div>
+      <div class="gen-box">
+        <div class="gen-grid" id="genGrid"></div>
+        <div class="gen-preview" id="genPreview"></div>
+        <div class="gen-actions">
+          <button class="btn primary" id="applyGenBtn" type="button">Apply to legend</button>
+          <span class="gen-note" id="genNote"></span>
+        </div>
+        <p class="hint">Hue gaps grow from the start spacing to the end spacing. Curve 1.0 = linear growth; &gt;1 accelerates the growth, &lt;1 makes most of the increase happen early. Count beyond the 12 legend entries wraps around the hue wheel.</p>
+      </div>
+
+      <div class="section-title">Bonus types — palette (legend order)</div>
+      <div class="palette" id="palette"></div>
+
+      <div class="section-title">Bonus type rules — accordion</div>
+      <div id="ruleAcc"></div>
+
+      <div class="section-title">Column groups — per-column colours (88)</div>
+      <div id="groupAcc"></div>
+
+      <div class="defaults-bar">
+        <button class="btn primary" id="saveDefaultsBtn" type="button">Save current as defaults</button>
+        <button class="btn" id="resetDefaultsBtn" type="button">Reset to defaults</button>
+        <button class="btn danger" id="factoryBtn" type="button">Factory reset</button>
+        <span class="defaults-note" id="defaultsNote"></span>
+      </div>
+
+      <div class="copy-row">
+        <button class="copy-btn" id="copyBtn" type="button">Copy updated hues</button>
+        <span class="copy-note" id="copyNote"></span>
+      </div>
+      <p class="hint">Hues here are also used for row tints and the frozen URL column. "Save current as defaults" pins a baseline in this browser; "Reset to defaults" restores it (or the built-in hues when none are saved).</p>
+    </div>
+  </body>
+</html>

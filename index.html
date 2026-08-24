@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dayne Bonuses</title>
+    <link rel="icon" type="image/svg+xml" href="/dayne-bonuses/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+    <script type="module" crossorigin src="/dayne-bonuses/assets/main-HN1GdJVO.js"></script>
+    <link rel="modulepreload" crossorigin href="/dayne-bonuses/assets/colors-Bkso9loH.js">
+    <link rel="stylesheet" crossorigin href="/dayne-bonuses/assets/colors-BJsQ0z_J.css">
+  </head>
+  <body>
+    <div id="app">
+      <div class="top-bar">
+      <div class="tabs">
+        <button class="tab active" data-sheet="all" title="Full database — every bonus, raw &amp; cleaned included"><span class="btn-ico">🗄️</span><span class="btn-label">DB</span></button>
+        <button class="tab" data-sheet="fresh" title="Latest scrape only"><span class="btn-ico">🆕</span><span class="btn-label">New</span></button>
+        <button class="tab" id="uploadBtn" data-sheet="upload" title="Open a CSV file"><span class="btn-ico">📂</span><span class="btn-label">Upload</span></button>
+        <button class="tab" data-sheet="reset" title="Reset everything"><span class="btn-ico">🔁</span><span class="btn-label">Reset</span></button>
+      </div>
+        <a class="top-btn" href="./colors.html" title="Colour Lab — edit the viewer colour scheme"><span class="btn-ico">🎨</span><span class="btn-label show">Colour</span></a>
+        <button class="top-btn" id="settingsBtn" type="button" title="Settings"><span class="btn-ico">⚙️</span><span class="btn-label">Settings</span></button>
+        <button class="top-btn" id="hideShowBtn" type="button" title="Show or hide columns"><span class="btn-ico">🔻</span><span class="btn-label">Show</span></button>
+        <input type="file" id="fileInput" accept=".csv" hidden />
+        <span class="file-name" id="fileName"></span>
+      </div>
+      <div class="cols-dropdown" id="colsDropdown" hidden></div>
+      <div class="sheet-info" id="sheetInfo"></div>
+      <div class="legend" id="legend" hidden></div>
+      <div class="table-wrapper">
+        <table id="dataTable">
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="row-menu" id="rowMenu" hidden>
+        <div class="row-menu-title" id="rowMenuTitle"></div>
+        <div class="row-menu-opts" id="rowMenuOpts"></div>
+        <button class="row-menu-delete" id="rowMenuDelete" type="button">Delete row</button>
+        <button class="row-menu-cancel" id="rowMenuCancel" type="button">Cancel</button>
+      </div>
+      <div class="col-menu" id="colMenu" hidden>
+        <div class="col-menu-title" id="colMenuTitle"></div>
+        <div class="col-menu-opts" id="colMenuOpts"></div>
+        <button class="col-menu-cancel" id="colMenuCancel" type="button">Cancel</button>
+      </div>
+      <div class="settings-overlay" id="settingsOverlay" hidden>
+        <div class="settings-panel">
+          <div class="settings-head">
+            <div class="settings-title">Settings</div>
+            <button class="settings-close" id="settingsClose" type="button">✕</button>
+          </div>
+          <div class="settings-body">
+            <div class="settings-section">Layout</div>
+            <div class="setting-row">
+              <div><div class="setting-label">Reorder columns</div><div class="setting-desc">Drag any column (except URL) to move it</div></div>
+              <label class="toggle"><input type="checkbox" id="setReorder"><span class="knob"></span></label>
+            </div>
+            <div class="setting-row">
+              <div><div class="setting-label">Freeze first column</div><div class="setting-desc">Keep the URL column pinned while scrolling</div></div>
+              <label class="toggle"><input type="checkbox" id="setFreeze"><span class="knob"></span></label>
+            </div>
+            <div class="setting-row">
+              <div><div class="setting-label">Row density</div><div class="setting-desc">Compact rows show more per screen</div></div>
+              <div class="setting-val seg" id="setDensity">
+                <button type="button" data-d="cozy">Cozy</button><button type="button" data-d="compact">Compact</button>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div><div class="setting-label">Remember sort</div><div class="setting-desc">Keep your column sort per tab</div></div>
+              <label class="toggle"><input type="checkbox" id="setSort"><span class="knob"></span></label>
+            </div>
+            <div class="settings-section">Deleted rows</div>
+            <div class="deleted-list" id="deletedList"></div>
+            <button class="settings-danger" id="settingsReset" type="button">Reset viewer</button>
+          </div>
+        </div>
+      </div>
+      <div class="detail-overlay" id="detailOverlay" hidden>
+        <div class="detail-panel">
+          <div class="detail-head">
+            <div class="detail-title" id="detailTitle"></div>
+            <button class="detail-close" id="detailClose" type="button">✕</button>
+          </div>
+          <div class="detail-sub" id="detailSub"></div>
+          <div class="table-wrapper detail-table">
+            <table id="detailTable">
+              <thead id="detailHead"></thead>
+              <tbody id="detailBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
