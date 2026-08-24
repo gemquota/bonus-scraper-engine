@@ -1,16 +1,30 @@
-import base64, json, re, time
+import base64, json, re, ssl, time
 from pathlib import Path
-import cloudscraper, requests
+import cloudscraper, requests, urllib3
+from requests.adapters import HTTPAdapter
 import config
+
+urllib3.disable_warnings()
 
 CACHE_PATH = Path("data/ip_health.json")
 
 DEFAULT_BROWSER = {'browser': 'chrome', 'platform': 'windows', 'desktop': True}
 
+class TLSAdapter(HTTPAdapter):
+    def init_poolmanager(self, *args, **kwargs):
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        ctx.set_ciphers("DEFAULT:@SECLEVEL=1")
+        kwargs["ssl_context"] = ctx
+        return super().init_poolmanager(*args, **kwargs)
+
 def create_session(proxy=None, browser_config=None):
     if browser_config is None:
         browser_config = DEFAULT_BROWSER
     scraper_session = cloudscraper.create_scraper(browser=browser_config)
+    scraper_session.verify = False
+    scraper_session.mount("https://", TLSAdapter())
     scraper_session.headers.update({
         "User-Agent": config.USER_AGENT,
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
@@ -26,6 +40,26 @@ def create_session(proxy=None, browser_config=None):
     if proxy:
         scraper_session.proxies = {"http": proxy, "https": proxy}
     return scraper_session
+
+def create_fallback_session():
+    """Plain requests session for sites where cloudscraper fails."""
+    s = requests.Session()
+    s.verify = False
+    s.mount("https://", TLSAdapter())
+    s.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Cache-Control": "max-age=0",
+    })
+    return s
 
 def post_json(session, url, data):
     response = session.post(url, data=data, timeout=getattr(session, "timeout", None) or config.TIMEOUT)

@@ -15,11 +15,16 @@ ERROR_MAP = [("MERCHANT", 201), ("Captcha", 202), ("gaierror", 102), ("Timeout",
     ("Refused", 101), ("Connection", 103), ("403", 403)]
 
 USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
 ]
 
 BROWSER_CONFIGS = [
@@ -49,29 +54,35 @@ def classify_error(exception):
     return 301
 
 def process_bonus(bonus, merchant_name, url, fingerprint, perceived_value, expiry):
+    expiry_string = expiry.isoformat() if expiry else None
+
+    def refresh_bonus(unique_id, mirrors):
+        # Re-sighting: keep the row but refresh the latest amount/details so
+        # live values (e.g. weekly commission) aren't frozen at first sight.
+        if url not in str(mirrors):
+            mirrors = f"{mirrors},{url}"
+        db.execute(
+            "UPDATE b SET v=?, pv=?, raw=?, exp=?, fp=?, mirrors=?, sl=CURRENT_TIMESTAMP WHERE uid=?",
+            (str(bonus.get("amount", 0)), perceived_value, json.dumps(bonus),
+             expiry_string, fingerprint, mirrors, unique_id)
+        )
+        return unique_id, 0
+
     existing_records = db.execute("SELECT uid, mirrors FROM b WHERE fp=?", (fingerprint,))
     if existing_records:
-        unique_id, mirrors = existing_records[0]
-        if url not in str(mirrors):
-            db.execute("UPDATE b SET mirrors=?, sl=CURRENT_TIMESTAMP WHERE uid=?", (f"{mirrors},{url}", unique_id))
-        else:
-            db.execute("UPDATE b SET sl=CURRENT_TIMESTAMP WHERE uid=?", (unique_id,))
-        return unique_id, 0
+        return refresh_bonus(existing_records[0][0], existing_records[0][1])
         
-    merchant_name_rows = db.execute("SELECT name, uid, mirrors FROM b WHERE mname=?", (merchant_name,))
+    amount = db.float_value(bonus.get("amount"))
+    merchant_name_rows = db.execute("SELECT name, uid, mirrors, v FROM b WHERE mname=?", (merchant_name,))
     if merchant_name_rows:
         existing_names = [row[0] for row in merchant_name_rows if row[0]]
         matched_name = db.find_matching_name(bonus.get("name"), existing_names)
         if matched_name:
             matched_row = next((row for row in merchant_name_rows if row[0] == matched_name), None)
-            if matched_row and url not in str(matched_row[2]):
-                db.execute("UPDATE b SET mirrors=?, sl=CURRENT_TIMESTAMP WHERE uid=?", (f"{matched_row[2]},{url}", matched_row[1]))
-            elif matched_row:
-                db.execute("UPDATE b SET sl=CURRENT_TIMESTAMP WHERE uid=?", (matched_row[1],))
-            return (matched_row[1] if matched_row else None), 0
+            if matched_row and db.float_value(matched_row[3]) == amount:
+                return refresh_bonus(matched_row[1], matched_row[2])
             
-    unique_id = f"{url}|{bonus.get('id')}"
-    expiry_string = expiry.isoformat() if expiry else None
+    unique_id = f"{url}|{bonus.get('id')}|{amount}"
     db.execute(
         "REPLACE INTO b(uid, eid, u, v, pv, raw, exp, fp, mirrors, sl, mname, name) VALUES (?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?,?)",
         (unique_id, bonus.get("id"), url, str(bonus.get("amount", 0)), perceived_value, json.dumps(bonus),
@@ -163,13 +174,19 @@ def worker(chunk_id, stats, stats_lock, total_tasks, pass_start, ip_score, recor
         for attempt in range(max_retries):
             try:
                 if attempt > 0:
-                    time.sleep(random.uniform(2.0, 4.0) * attempt)
+                    backoff = (2 ** attempt) * 2
+                    time.sleep(backoff)
                 # Fresh session per URL — unique UA + browser fingerprint combo
                 combo_idx = chunk_id * 1000 + task_idx * 3 + attempt
                 browser_cfg = BROWSER_CONFIGS[combo_idx % len(BROWSER_CONFIGS)]
-                scraper_session = net.create_session(browser_config=browser_cfg)
-                scraper_session.headers.update({"User-Agent": USER_AGENTS[combo_idx % len(USER_AGENTS)]})
-                scraper_session.timeout = config.TIMEOUT + (attempt * 10)
+                if attempt >= max_retries - 1:
+                    scraper_session = net.create_fallback_session()
+                    scraper_session.headers.update({"User-Agent": USER_AGENTS[combo_idx % len(USER_AGENTS)]})
+                    scraper_session.timeout = config.TIMEOUT + (attempt * 10)
+                else:
+                    scraper_session = net.create_session(browser_config=browser_cfg)
+                    scraper_session.headers.update({"User-Agent": USER_AGENTS[combo_idx % len(USER_AGENTS)]})
+                    scraper_session.timeout = config.TIMEOUT + (attempt * 10)
 
                 success, html_content, site_bonuses, site_new = try_scrape_url(
                     scraper_session, url, username, password, record_raw, chunk_id

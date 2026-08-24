@@ -6,7 +6,7 @@ urllib3.disable_warnings()
 config_parser = configparser.ConfigParser()
 config_parser.read([str(Path("in/config.ini")), str(Path("in/config/config.ini"))])
 
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 TIMEOUT = 25
 MIN_DELAY = config_parser.getfloat("SETTINGS", "min_delay", fallback=1.0)
 MAX_DELAY = config_parser.getfloat("SETTINGS", "max_delay", fallback=3.0)
